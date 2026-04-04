@@ -1,0 +1,47 @@
+{
+  "entities": {
+    "Task": {
+      "title": "Task",
+      "description": "A task in the Planova app.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique task ID." },
+        "uid": { "type": "string", "description": "User ID of the owner." },
+        "title": { "type": "string", "description": "Task title." },
+        "description": { "type": "string", "description": "Task description." },
+        "duration": { "type": "string", "description": "Estimated duration." },
+        "due": { "type": "string", "description": "Due date." },
+        "priority": { "type": "string", "enum": ["High", "Medium", "Low"] },
+        "status": { "type": "string", "enum": ["Pending", "In Progress", "Completed"] },
+        "progress": { "type": "number", "description": "Task progress percentage." },
+        "startTime": { "type": "string", "description": "Scheduled start time." },
+        "endTime": { "type": "string", "description": "Scheduled end time." },
+        "createdAt": { "type": "number", "description": "Creation timestamp." }
+      },
+      "required": ["id", "uid", "title", "duration", "due", "priority", "status", "createdAt"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "user"] }
+      },
+      "required": ["uid", "displayName", "email", "role"]
+    }
+  },
+  "firestore": {
+    "/tasks/{taskId}": {
+      "schema": { "$ref": "Task" },
+      "description": "Collection of tasks."
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "UserProfile" },
+      "description": "User profile documents."
+    }
+  }
+}

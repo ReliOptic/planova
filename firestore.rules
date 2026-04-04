@@ -1,0 +1,115 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (uid)
+    // Fields:
+    //   - uid: string (required) - User ID
+    //   - displayName: string (required) - User's name
+    //   - email: string (required) - User's email
+    //   - photoURL: string (optional) - User's photo URL
+    //   - role: string (required, ['admin', 'user']) - User's role
+    //
+    // Collection: tasks
+    // Document ID: taskId
+    // Fields:
+    //   - id: string (required) - Task ID
+    //   - uid: string (required) - Owner ID
+    //   - title: string (required) - Task title
+    //   - description: string (optional) - Task description
+    //   - duration: string (required) - Task duration
+    //   - due: string (required) - Task due date
+    //   - priority: string (required, ['High', 'Medium', 'Low']) - Task priority
+    //   - status: string (required, ['Pending', 'In Progress', 'Completed']) - Task status
+    //   - progress: number (optional, 0-100) - Task progress
+    //   - startTime: string (optional) - Start time
+    //   - endTime: string (optional) - End time
+    //   - createdAt: number (required) - Creation timestamp
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "heewonl92@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUser(data) {
+      return hasRequiredFields(['uid', 'displayName', 'email', 'role']) &&
+             hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'role']) &&
+             data.uid == request.auth.uid &&
+             data.displayName is string && data.displayName.size() > 0 && data.displayName.size() < 100 &&
+             isValidEmail(data.email) &&
+             data.role in ['admin', 'user'];
+    }
+
+    function isValidTask(data) {
+      return hasRequiredFields(['id', 'uid', 'title', 'duration', 'due', 'priority', 'status', 'createdAt']) &&
+             hasOnlyAllowedFields(['id', 'uid', 'title', 'description', 'duration', 'due', 'priority', 'status', 'progress', 'startTime', 'endTime', 'createdAt']) &&
+             data.uid == request.auth.uid &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.priority in ['High', 'Medium', 'Low'] &&
+             data.status in ['Pending', 'In Progress', 'Completed'] &&
+             (data.progress == null || (data.progress is number && data.progress >= 0 && data.progress <= 100));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    (request.resource.data.role == 'user' || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    (request.resource.data.role == resource.data.role || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidTask(request.resource.data);
+      allow update: if isAuthenticated() && isValidTask(request.resource.data) && 
+                    (isDocOwner() || isAdmin());
+      allow delete: if isAuthenticated() && (isDocOwner() || isAdmin());
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
