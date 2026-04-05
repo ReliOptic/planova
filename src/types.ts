@@ -1,20 +1,17 @@
-export type Priority = 'High' | 'Medium' | 'Low';
-export type Status = 'Pending' | 'In Progress' | 'Completed';
+// Re-export from new location. All types live in src/types/task.types.ts now.
+export {
+  type Priority,
+  type TaskStatus,
+  type Task,
+  type ScheduleBlock,
+  type ExternalCalendarEvent,
+  type LegacyTask,
+  toScheduleBlock,
+  SCHEMA_VERSION,
+} from './types/task.types';
 
-export interface Task {
-  id: string;
-  uid: string; // Added for ownership
-  title: string;
-  description?: string;
-  duration: string;
-  due: string;
-  priority: Priority;
-  status: Status;
-  progress?: number;
-  startTime?: string;
-  endTime?: string;
-  createdAt: number; // Added for sorting
-}
+// Legacy alias for gradual migration
+export type Status = import('./types/task.types').TaskStatus;
 
 export interface WeeklyVelocity {
   day: string;

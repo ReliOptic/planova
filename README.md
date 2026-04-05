@@ -1,20 +1,55 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Planova
 
-# Run and deploy your AI Studio app
+Drag-and-drop task scheduling on a visual timeline.
 
-This contains everything you need to run your app locally.
+## Features
 
-View your app in AI Studio: https://ai.studio/apps/62fd4e2a-70c6-403a-bd92-2fccafa0b3fe
+- **Visual Timeline** - Day view with 15-minute snap grid. Drag tasks from backlog onto your schedule.
+- **Drag & Drop** - Move tasks between backlog and timeline, or reposition scheduled blocks.
+- **Resize Blocks** - Drag top/bottom edges of task blocks to adjust start time or duration.
+- **Double-Click Edit** - Double-click any scheduled task to edit title, duration, priority, or deadline.
+- **Task Lifecycle** - 4 states: Pending → Scheduled → In Progress → Completed.
+- **Overdue Detection** - Tasks past their end time get flagged automatically.
+- **Work Hours** - Configurable start/end hours (Settings page, persisted in localStorage).
+- **Google Auth** - Sign in with Google via Firebase Authentication.
+- **Real-time Sync** - Firestore-backed. Changes sync instantly across tabs.
+- **Current Time Marker** - Red line on today's timeline shows where you are right now.
 
-## Run Locally
+## Tech Stack
 
-**Prerequisites:**  Node.js
+- React 19 + TypeScript
+- Vite
+- Tailwind CSS v4
+- Firebase (Auth + Firestore)
+- dnd-kit (drag and drop)
+- Motion (animations)
+- Lucide React (icons)
 
+## Getting Started
+
+**Prerequisites:** Node.js 18+
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+   ```
+   npm install
+   ```
+
+2. Add your Firebase config to `firebase-applet-config.json`.
+
+3. Enable Google sign-in in your Firebase Console under Authentication > Sign-in method.
+
+4. Add `localhost` to Authorized domains in Firebase Console (Authentication > Settings).
+
+5. Run the dev server:
+   ```
+   npm run dev
+   ```
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server on port 3000 |
+| `npm run build` | Production build to `dist/` |
+| `npm run preview` | Preview production build |
+| `npm run lint` | Type-check with `tsc --noEmit` |

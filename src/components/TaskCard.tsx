@@ -1,15 +1,18 @@
 import React from 'react';
-import { GripVertical, Clock, Calendar, Flag } from 'lucide-react';
+import { GripVertical, Clock, Calendar, Trash2 } from 'lucide-react';
 import { Task } from '@/src/types';
 import { cn } from '@/src/lib/utils';
+import { formatDuration, formatDueDate, getLocalToday } from '@/src/utils/date-utils';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 
 interface TaskCardProps {
   task: Task;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
+export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
     data: task,
@@ -28,9 +31,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   };
 
   return (
-    <div 
+    <div
       ref={setNodeRef}
       style={style}
+      onDoubleClick={onEdit}
       className={cn(
         "bg-surface-container-lowest p-4 rounded-xl shadow-sm cursor-grab active:cursor-grabbing hover:bg-surface-container-high transition-colors group",
         task.status === 'In Progress' && "border-l-4 border-primary",
@@ -48,8 +52,20 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
             {task.priority} Priority
           </span>
         )}
-        <div {...attributes} {...listeners} className="p-1 hover:bg-surface-container rounded transition-colors">
-          <GripVertical className="text-outline-variant group-hover:text-primary transition-colors" size={18} />
+        <div className="flex items-center gap-1">
+          {onDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="p-1 text-on-surface-variant hover:text-tertiary transition-colors opacity-0 group-hover:opacity-100 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:opacity-100 rounded"
+              title="Delete task"
+              aria-label="Delete task"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+          <div {...attributes} {...listeners} aria-label="Drag to reorder" className="p-1 hover:bg-surface-container rounded transition-colors">
+            <GripVertical className="text-outline-variant group-hover:text-primary transition-colors" size={18} />
+          </div>
         </div>
       </div>
 
@@ -58,21 +74,18 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-on-surface-variant text-xs">
           <Clock size={14} />
-          <span>{task.duration} duration</span>
+          <span>{formatDuration(task.duration)}</span>
         </div>
         {task.due && (
           <div className="flex items-center gap-2 text-on-surface-variant text-xs">
             <Calendar size={14} />
-            <span>Due: {task.due}</span>
+            <span className={cn(task.due < getLocalToday() && "text-tertiary")}>
+              Due: {formatDueDate(task.due)}
+            </span>
           </div>
         )}
       </div>
 
-      {task.status === 'In Progress' && task.progress !== undefined && (
-        <div className="w-full h-1 bg-primary-fixed rounded-full overflow-hidden mt-4">
-          <div className="h-full bg-primary transition-all duration-500" style={{ width: `${task.progress}%` }}></div>
-        </div>
-      )}
     </div>
   );
 };
