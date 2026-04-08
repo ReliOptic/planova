@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { History } from 'lucide-react';
-import { collection, onSnapshot, orderBy, query, where } from 'firebase/firestore';
-import { User } from 'firebase/auth';
-import { db, handleFirestoreError, OperationType } from '@/src/firebase';
-import { migrateTask } from '@/src/utils/migrate';
-import { Task } from '@/src/types';
-import { formatDuration } from '@/src/utils/date-utils';
+import { liveQuery } from 'dexie';
+import { db } from '../infrastructure/persistence/db';
+import type { Task } from '../domain/task';
+import { formatDuration } from '../utils/date-utils';
 
 const PRIORITY_BADGE: Record<Task['priority'], string> = {
   High: 'bg-tertiary-container text-white',
@@ -21,29 +19,23 @@ function formatCompletedAt(ms: number): string {
   });
 }
 
-interface HistoryViewProps {
-  user: User;
-}
-
-export const HistoryView: React.FC<HistoryViewProps> = ({ user }) => {
-  const [tasks, setTasks] = useState<Task[]>([]);
+/** HistoryView — displays all completed tasks ordered by completion time. */
+export const HistoryView: React.FC = () => {
+  const [tasks, setTasks] = useState<readonly Task[]>([]);
 
   useEffect(() => {
-    const q = query(
-      collection(db, 'tasks'),
-      where('uid', '==', user.uid),
-      where('status', '==', 'Completed'),
-      orderBy('completedAt', 'desc'),
-    );
-
-    const unsubscribe = onSnapshot(q, (snap) => {
-      setTasks(snap.docs.map((d) => migrateTask({ id: d.id, ...d.data() })));
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'tasks');
+    const subscription = liveQuery(() =>
+      db.tasks.where('status').equals('Completed').reverse().sortBy('completedAt'),
+    ).subscribe({
+      next: (result) => setTasks(result),
+      error: (cause: unknown) => {
+        console.error(
+          JSON.stringify({ level: 'error', event: 'history/load-failed', cause: String(cause) }),
+        );
+      },
     });
-
-    return unsubscribe;
-  }, [user.uid]);
+    return () => subscription.unsubscribe();
+  }, []);
 
   if (tasks.length === 0) {
     return (
@@ -75,11 +67,13 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ user }) => {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-on-surface truncate">{task.title}</p>
               <p className="text-xs text-on-surface-variant mt-0.5">
-                {formatDuration(task.duration)}
+                {formatDuration(task.durationMinutes)}
                 {task.completedAt != null ? ` · ${formatCompletedAt(task.completedAt)}` : ''}
               </p>
             </div>
-            <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${PRIORITY_BADGE[task.priority]}`}>
+            <span
+              className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${PRIORITY_BADGE[task.priority]}`}
+            >
               {task.priority}
             </span>
           </li>

@@ -1,5 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { getWorkHours, saveWorkHours } from '@/src/utils/settings';
+import { SettingsBackupSection } from './settings-backup-section';
+import { SettingsAiSection } from './settings-ai-section';
+import { SettingsDiagnosticsSection } from './settings-diagnostics-section';
+import { aiCredentialRepository, logger } from '../app/dependencies';
 
 const hourOptions = Array.from({ length: 18 }, (_, i) => {
   const h = i + 5; // 5am to 10pm
@@ -30,6 +34,12 @@ export const SettingsPage: React.FC = () => {
     }
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => setMessage(null), 3000);
+  };
+
+  const handleBackupMessage = (text: string, isError: boolean) => {
+    setMessage({ text, isError });
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setMessage(null), 4000);
   };
 
   const inputClass =
@@ -86,14 +96,13 @@ export const SettingsPage: React.FC = () => {
 
       <hr className="border-surface-container-highest mb-8" />
 
-      {/* API Keys (Phase 4) */}
-      <section className="mb-8">
-        <div className="flex items-center gap-2 mb-4">
-          <h3 className="text-sm font-bold text-on-surface uppercase tracking-wide">AI Scheduling</h3>
-          <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-tight bg-surface-container-highest text-on-surface-variant rounded-full">Coming Soon</span>
-        </div>
-        <p className="text-xs text-on-surface-variant">Gemini and OpenRouter API keys for AI-powered scheduling.</p>
-      </section>
+      {/* AI Assistant */}
+      <SettingsAiSection credentialRepository={aiCredentialRepository} />
+
+      <hr className="border-surface-container-highest mb-8" />
+
+      {/* Backup / Restore */}
+      <SettingsBackupSection onMessage={handleBackupMessage} />
 
       <hr className="border-surface-container-highest mb-8" />
 
@@ -105,6 +114,11 @@ export const SettingsPage: React.FC = () => {
         </div>
         <p className="text-xs text-on-surface-variant">Connect Google Calendar to sync your schedule.</p>
       </section>
+
+      <hr className="border-surface-container-highest mb-8 mt-8" />
+
+      {/* Diagnostics */}
+      <SettingsDiagnosticsSection logger={logger} />
     </div>
   );
 };

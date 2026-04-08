@@ -53,6 +53,7 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
         priority,
         due,
       });
+      onClose();
     } finally {
       setIsSaving(false);
     }

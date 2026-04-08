@@ -1,17 +1,12 @@
-// Re-export from new location. All types live in src/types/task.types.ts now.
-export {
-  type Priority,
-  type TaskStatus,
-  type Task,
-  type ScheduleBlock,
-  type ExternalCalendarEvent,
-  type LegacyTask,
-  toScheduleBlock,
-  SCHEMA_VERSION,
-} from './types/task.types';
+// Re-export domain types used across the application.
+// The UI layer works with TaskViewModel (v2 domain Task + schedule projection).
+// Named as `Task` here for backward compatibility with all UI components.
+export type { Priority, TaskStatus } from './domain/task';
+export type { TaskViewModel as Task } from './services/task-view-model';
+export { SCHEMA_VERSION } from './types/task.types';
 
 // Legacy alias for gradual migration
-export type Status = import('./types/task.types').TaskStatus;
+export type Status = import('./domain/task').TaskStatus;
 
 export interface WeeklyVelocity {
   day: string;
