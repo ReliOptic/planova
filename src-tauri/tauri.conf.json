@@ -24,7 +24,16 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost https://openrouter.ai; font-src 'self' data:; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; object-src 'none'; base-uri 'self'"
+      "csp": "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost https://openrouter.ai https://github.com https://api.github.com; font-src 'self' data:; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; object-src 'none'; base-uri 'self'"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "",
+      "endpoints": [
+        "https://github.com/OWNER/planova/releases/latest/download/latest.json"
+      ],
+      "dialog": true
     }
   },
   "bundle": {

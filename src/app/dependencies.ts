@@ -6,6 +6,9 @@ import { DexieResponseCache } from '../infrastructure/ai/response-cache';
 import { TokenBucketRateLimiter } from '../infrastructure/ai/rate-limiter';
 import { OpenRouterClient } from '../infrastructure/ai/openrouter-client';
 import { DexieRingBufferLogger } from '../infrastructure/logger/logger';
+import { isTauriEnvironment } from '../infrastructure/tauri/backup-io';
+import { StrongholdCredentialRepository } from '../infrastructure/tauri/stronghold-credential-repository';
+import type { IAiCredentialRepository } from '../infrastructure/persistence/ai-credential-repository';
 
 /** Singleton task repository backed by IndexedDB (Dexie). */
 export const taskRepository = new DexieTaskRepository(db);
@@ -13,8 +16,13 @@ export const taskRepository = new DexieTaskRepository(db);
 /** Singleton schedule-block repository backed by IndexedDB (Dexie). */
 export const scheduleBlockRepository = new DexieScheduleBlockRepository(db);
 
-/** Singleton AI credential repository backed by IndexedDB (Dexie). */
-export const aiCredentialRepository = new DexieAiCredentialRepository(db);
+/** Legacy IndexedDB credential repository (used for migration). */
+export const dexieAiCredentialRepository = new DexieAiCredentialRepository(db);
+
+/** Active AI credential repository — Stronghold when in Tauri, IndexedDB otherwise. */
+export const aiCredentialRepository: IAiCredentialRepository = isTauriEnvironment()
+  ? new StrongholdCredentialRepository()
+  : dexieAiCredentialRepository;
 
 /** Singleton AI response cache backed by IndexedDB (Dexie). */
 export const aiResponseCache = new DexieResponseCache(db);

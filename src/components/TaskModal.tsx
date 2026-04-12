@@ -88,7 +88,7 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
                   {editingTask ? 'Edit title, duration, or deadline.' : 'Add a task to your backlog.'}
                 </p>
               </div>
-              <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface transition-colors p-1">
+              <button onClick={onClose} aria-label="모달 닫기" className="text-on-surface-variant hover:text-on-surface transition-colors p-1">
                 <X size={24} />
               </button>
             </div>

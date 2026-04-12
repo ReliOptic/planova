@@ -1,15 +1,18 @@
-import { save, open } from '@tauri-apps/plugin-dialog';
-import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { ok, err, type Result } from '../../domain/result';
 import type { AppError } from '../../domain/errors';
 import { isBackupBundle, type BackupBundle } from '../../domain/backup-bundle';
 
+/** Returns true when running inside a Tauri WebView (IPC bridge present). */
+export function isTauriEnvironment(): boolean {
+  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+}
+
 /**
- * Tauri-native backup I/O.
+ * Tauri-native backup I/O with graceful fallback.
  *
- * Uses the system file dialog to pick a path, then the fs plugin to read or
- * write the JSON contents. There is intentionally no web fallback: the app
- * is a Tauri-only desktop target.
+ * When running inside Tauri, uses the native file dialog + fs plugin.
+ * When running in a plain browser (`npm run dev`), returns a clear error
+ * so the UI can show a toast instead of crashing.
  */
 
 /** Default suggested filename for an export, stamped with today's date. */
@@ -25,9 +28,19 @@ function defaultExportName(): string {
  *          cancelled the dialog, or err(AppError) on serialization / write
  *          failure.
  */
+const NOT_IN_TAURI: AppError = {
+  kind: 'repo/write-failed',
+  cause: 'Tauri 런타임에서만 사용할 수 있습니다. npm run tauri:dev 로 실행하세요.',
+};
+
 export async function exportBackupViaDialog(
   bundle: BackupBundle,
 ): Promise<Result<string | null, AppError>> {
+  if (!isTauriEnvironment()) return err(NOT_IN_TAURI);
+
+  const { save } = await import('@tauri-apps/plugin-dialog');
+  const { writeTextFile } = await import('@tauri-apps/plugin-fs');
+
   let contents: string;
   try {
     contents = JSON.stringify(bundle, null, 2);
@@ -59,14 +72,12 @@ export async function exportBackupViaDialog(
   }
 }
 
-/**
- * Show a native "Open File" dialog, read the selected JSON, and validate it
- * as a BackupBundle.
- *
- * @returns ok(bundle) on success, ok(null) if the user cancelled, or
- *          err(AppError) on read / parse / validation failure.
- */
 export async function importBackupViaDialog(): Promise<Result<BackupBundle | null, AppError>> {
+  if (!isTauriEnvironment()) return err(NOT_IN_TAURI);
+
+  const { open } = await import('@tauri-apps/plugin-dialog');
+  const { readTextFile } = await import('@tauri-apps/plugin-fs');
+
   let selection: string | string[] | null;
   try {
     selection = await open({

@@ -24,6 +24,7 @@ export function Toast({ message, type, onDismiss }: ToastProps): React.ReactElem
         transition={{ duration: 0.2 }}
         className={`fixed bottom-6 right-6 z-[200] flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-white text-sm font-medium max-w-sm ${bgClass}`}
         role="alert"
+        aria-live="polite"
       >
         <span className="flex-1">{message}</span>
         <button

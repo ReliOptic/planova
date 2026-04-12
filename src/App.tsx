@@ -25,6 +25,9 @@ import type { TaskViewModel } from './services/task-view-model';
 import type { Task as DomainTask } from './domain/task';
 import type { ScheduleBlock } from './domain/schedule-block';
 import { useTaskActions } from './hooks/useTaskActions';
+import { migrateCredentialToStronghold } from './infrastructure/tauri/stronghold-credential-repository';
+import { dexieAiCredentialRepository, aiCredentialRepository } from './app/dependencies';
+import { useOverdueNotifications } from './hooks/use-overdue-notifications';
 
 const PendingDroppable: React.FC<{
   tasks: Task[];
@@ -78,6 +81,7 @@ export default function App() {
   const [tasks, setTasks] = useState<readonly TaskViewModel[]>([]);
   const [isMigrating, setIsMigrating] = useState(true);
   const { toast, showToast, dismissToast } = useToast();
+  useOverdueNotifications();
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
@@ -105,6 +109,9 @@ export default function App() {
         showToast('Database migration failed. Some data may be unavailable.');
       }
       setIsMigrating(false);
+
+      // Migrate plaintext API key to Stronghold (one-time, Tauri only)
+      void migrateCredentialToStronghold(dexieAiCredentialRepository, aiCredentialRepository);
 
       const taskSub = liveQuery(() =>
         db.tasks.orderBy('createdAt').reverse().toArray(),
@@ -184,6 +191,14 @@ export default function App() {
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="min-h-screen bg-surface">
+        {/* Skip navigation link for keyboard users */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded-lg focus:text-sm focus:font-bold"
+        >
+          메인 콘텐츠로 이동
+        </a>
+
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -193,7 +208,7 @@ export default function App() {
         />
         <TopBar />
 
-        <main role="main" aria-label="Dashboard content" className="pl-64 pt-16 min-h-screen">
+        <main id="main-content" role="main" aria-label="Dashboard content" className="pl-64 pt-16 min-h-screen">
           <AnimatePresence mode="wait">
             {activeTab === 'dashboard' ? (
               <motion.div

@@ -1,9 +1,50 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { getWorkHours, saveWorkHours } from '@/src/utils/settings';
 import { SettingsBackupSection } from './settings-backup-section';
 import { SettingsAiSection } from './settings-ai-section';
 import { SettingsDiagnosticsSection } from './settings-diagnostics-section';
 import { aiCredentialRepository, logger } from '../app/dependencies';
+import { isTauriEnvironment } from '../infrastructure/tauri/backup-io';
+
+const SettingsUpdateSection: React.FC<{ onMessage: (text: string, isError: boolean) => void }> = ({ onMessage }) => {
+  const [checking, setChecking] = useState(false);
+
+  const handleCheckUpdate = useCallback(async () => {
+    setChecking(true);
+    try {
+      const { check } = await import('@tauri-apps/plugin-updater');
+      const update = await check();
+      if (update) {
+        onMessage(`새 버전 ${update.version} 발견. 다운로드 중...`, false);
+        await update.downloadAndInstall();
+        onMessage('업데이트 설치 완료. 앱을 재시작합니다.', false);
+        const { relaunch } = await import('@tauri-apps/plugin-process');
+        await relaunch();
+      } else {
+        onMessage('최신 버전입니다.', false);
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      onMessage(`업데이트 확인 실패: ${msg}`, true);
+    } finally {
+      setChecking(false);
+    }
+  }, [onMessage]);
+
+  return (
+    <section className="mb-8">
+      <h3 className="text-sm font-bold text-on-surface mb-4 uppercase tracking-wide">앱 업데이트</h3>
+      <p className="text-xs text-on-surface-variant mb-4">현재 버전: v0.1.0</p>
+      <button
+        onClick={() => void handleCheckUpdate()}
+        disabled={checking}
+        className="px-6 py-2.5 bg-surface-container border border-outline-variant/30 text-on-surface text-sm font-bold rounded-lg hover:bg-surface-container-high active:scale-95 transition-all disabled:opacity-50"
+      >
+        {checking ? '확인 중...' : '업데이트 확인'}
+      </button>
+    </section>
+  );
+};
 
 const hourOptions = Array.from({ length: 18 }, (_, i) => {
   const h = i + 5; // 5am to 10pm
@@ -116,6 +157,11 @@ export const SettingsPage: React.FC = () => {
       </section>
 
       <hr className="border-surface-container-highest mb-8 mt-8" />
+
+      {/* App Update */}
+      {isTauriEnvironment() && <SettingsUpdateSection onMessage={handleBackupMessage} />}
+
+      {isTauriEnvironment() && <hr className="border-surface-container-highest mb-8" />}
 
       {/* Diagnostics */}
       <SettingsDiagnosticsSection logger={logger} />
