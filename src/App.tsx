@@ -216,7 +216,7 @@ export default function App() {
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          onAddTask={() => void handleQuickAdd()}
+          onAddTask={() => { setEditingTask(null); setIsModalOpen(true); }}
           pendingCount={pendingTasks.length}
           completedCount={completedCount}
         />
