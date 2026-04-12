@@ -44,7 +44,6 @@
     "longDescription": "Planova is an offline-first visual task timeline scheduler for Windows 11. All data stays on your device; optional OpenRouter integration for AI recommendations.",
     "publisher": "Planova",
     "copyright": "Copyright (c) 2026 Planova",
-    "licenseFile": "../LICENSE",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -54,10 +53,6 @@
     "windows": {
       "wix": {
         "language": ["en-US", "ko-KR"]
-      },
-      "nsis": {
-        "installMode": "perUser",
-        "languages": ["English", "Korean"]
       }
     }
   }
