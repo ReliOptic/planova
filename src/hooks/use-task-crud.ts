@@ -4,6 +4,7 @@ import type { Task } from '../domain/task';
 import { taskRepository, scheduleBlockRepository, logger } from '../app/dependencies';
 import { buildUTCTime, getLocalToday } from '../utils/date-utils';
 import { sanitizeText } from '../utils/sanitize';
+import { getNextOccurrence } from '../domain/recurrence-rule';
 
 /** Emit a structured error log via the shared logger. */
 export function logError(event: string, cause: unknown): void {
@@ -38,6 +39,36 @@ export async function handleCompleteTask(
     return;
   }
   await deleteBlocksForTask(taskId);
+
+  // If this is a recurring task, create the next instance
+  const completedTask = (await taskRepository.get(taskId));
+  if (completedTask.ok && completedTask.value.recurrenceRule) {
+    const rule = completedTask.value.recurrenceRule;
+    const fromDate = completedTask.value.due ?? getLocalToday();
+    const nextDate = getNextOccurrence(rule, fromDate);
+
+    if (nextDate !== null) {
+      const groupId = completedTask.value.recurrenceGroupId ?? completedTask.value.id;
+      const nextTask = createTask({
+        id: crypto.randomUUID(),
+        title: completedTask.value.title,
+        description: completedTask.value.description,
+        durationMinutes: completedTask.value.durationMinutes,
+        due: nextDate,
+        priority: completedTask.value.priority,
+        status: 'Pending',
+        createdAt: Date.now(),
+        color: completedTask.value.color,
+        recurrenceRule: rule,
+        recurrenceGroupId: groupId,
+      });
+
+      if (nextTask.ok) {
+        await taskRepository.create(nextTask.value);
+      }
+    }
+  }
+
   showToast('Task completed', 'success');
 }
 
@@ -106,6 +137,8 @@ async function updateExistingTask(
     priority: taskData.priority,
     description: taskData.description !== undefined ? sanitizeText(taskData.description) : undefined,
     color: taskData.color,
+    recurrenceRule: taskData.recurrenceRule,
+    recurrenceGroupId: taskData.recurrenceGroupId,
   };
 
   if (
@@ -149,6 +182,7 @@ async function createNewTask(
   setEditingTask: (task: TaskViewModel | null) => void,
 ): Promise<void> {
   const taskId = crypto.randomUUID();
+  const recurrenceGroupId = taskData.recurrenceRule ? crypto.randomUUID() : undefined;
   const taskValidation = createTask({
     id: taskId,
     title: sanitizeText(taskData.title) || 'Untitled Task',
@@ -158,6 +192,7 @@ async function createNewTask(
     status: 'Pending',
     createdAt: Date.now(),
     ...(taskData.description ? { description: sanitizeText(taskData.description) } : {}),
+    ...(taskData.recurrenceRule ? { recurrenceRule: taskData.recurrenceRule, recurrenceGroupId } : {}),
   });
 
   if (!taskValidation.ok) {

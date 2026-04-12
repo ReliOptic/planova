@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GripVertical, Check, Trash2 } from 'lucide-react';
+import { GripVertical, Check, Trash2, Repeat } from 'lucide-react';
 import { Task } from '@/src/types';
 import { useDraggable } from '@dnd-kit/core';
 import { cn } from '@/src/lib/utils';
@@ -98,13 +98,14 @@ export const DraggableScheduledTask: React.FC<DraggableScheduledTaskProps> = ({
           </div>
           <h4
             className={cn(
-              'text-sm font-bold font-headline truncate',
+              'text-sm font-bold font-headline truncate flex items-center gap-1',
               isOverdue ? 'text-tertiary'
                 : task.status === 'In Progress' ? 'text-primary'
                 : 'text-on-secondary-container',
             )}
           >
             {task.title}
+            {task.recurrenceRule && <Repeat size={12} className="shrink-0 opacity-70" title="반복 작업" />}
           </h4>
         </div>
         <TaskBlockActions

@@ -23,9 +23,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onAdd
 
   return (
     <aside role="navigation" aria-label="Main navigation" className="h-screen w-64 fixed left-0 top-0 z-50 bg-slate-50 flex flex-col py-6 px-4">
-      <div className="mb-10 px-2">
-        <h1 className="text-lg font-black text-primary font-headline tracking-tight uppercase">Planova</h1>
-        <p className="text-[10px] uppercase tracking-[0.05em] text-on-surface-variant font-bold mt-1">Schedule</p>
+      <div className="mb-10 px-2 flex items-center gap-2.5">
+        <img src="/icons/icon.svg" alt="Planova" className="w-9 h-9 rounded-lg" />
+        <div>
+          <h1 className="text-lg font-black text-primary font-headline tracking-tight uppercase leading-none">Planova</h1>
+          <p className="text-[10px] uppercase tracking-[0.05em] text-on-surface-variant font-bold mt-0.5">Schedule</p>
+        </div>
       </div>
 
       <nav className="flex-1 space-y-1">

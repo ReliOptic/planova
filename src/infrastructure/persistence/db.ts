@@ -19,8 +19,9 @@ export interface MetaRow {
  *   v2 — split into `tasks` + `scheduleBlocks`, adds `meta` for migration state.
  *   v3 — adds `aiCredentials` (pk `provider`) and `aiCache` (pk `key`, index `createdAt`).
  *   v4 — adds `logs` (pk auto-increment `id`, indexed on `ts`, `level`).
+ *   v5 — adds `recurrenceGroupId` index to `tasks` for recurring task series.
  *
- * Tables (v4):
+ * Tables (v5):
  *   tasks          — pk `id`, indexed on `status`, `createdAt`
  *   scheduleBlocks — pk `id`, indexed on `taskId`, `scheduledDate`
  *   meta           — pk `key`
@@ -59,6 +60,15 @@ export class PlanovaDatabase extends Dexie {
 
     this.version(4).stores({
       tasks: 'id, status, createdAt',
+      scheduleBlocks: 'id, taskId, scheduledDate',
+      meta: 'key',
+      aiCredentials: 'provider',
+      aiCache: 'key, createdAt',
+      logs: '++id, ts, level',
+    });
+
+    this.version(5).stores({
+      tasks: 'id, status, createdAt, recurrenceGroupId',
       scheduleBlocks: 'id, taskId, scheduledDate',
       meta: 'key',
       aiCredentials: 'provider',

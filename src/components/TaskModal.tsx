@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Clock, Calendar as CalendarIcon, ChevronDown } from 'lucide-react';
+import { X, Clock, Calendar as CalendarIcon, ChevronDown, Repeat } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Priority, Task, type TaskColor } from '@/src/types';
+import type { RecurrenceRule, RecurrenceFrequency } from '@/src/types';
 import { getDurationOptions, getLocalToday } from '@/src/utils/date-utils';
 import { TASK_COLORS, TASK_COLOR_MAP } from '@/src/domain/task';
 
@@ -21,6 +22,11 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
   const [priority, setPriority] = useState<Priority>('Medium');
   const [due, setDue] = useState(getLocalToday());
   const [color, setColor] = useState<TaskColor | undefined>(undefined);
+  const [recurrenceEnabled, setRecurrenceEnabled] = useState(false);
+  const [recurrenceFrequency, setRecurrenceFrequency] = useState<RecurrenceFrequency>('weekly');
+  const [recurrenceInterval, setRecurrenceInterval] = useState(1);
+  const [recurrenceDays, setRecurrenceDays] = useState<number[]>([]);
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   // Pre-fill when editing
@@ -32,6 +38,19 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
       setPriority(editingTask.priority);
       setDue(editingTask.due);
       setColor(editingTask.color);
+      if (editingTask.recurrenceRule) {
+        setRecurrenceEnabled(true);
+        setRecurrenceFrequency(editingTask.recurrenceRule.frequency);
+        setRecurrenceInterval(editingTask.recurrenceRule.interval);
+        setRecurrenceDays([...(editingTask.recurrenceRule.daysOfWeek ?? [])]);
+        setRecurrenceEndDate(editingTask.recurrenceRule.endDate ?? '');
+      } else {
+        setRecurrenceEnabled(false);
+        setRecurrenceFrequency('weekly');
+        setRecurrenceInterval(1);
+        setRecurrenceDays([]);
+        setRecurrenceEndDate('');
+      }
     } else {
       setTitle('');
       setDescription('');
@@ -39,6 +58,11 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
       setPriority('Medium');
       setDue(getLocalToday());
       setColor(undefined);
+      setRecurrenceEnabled(false);
+      setRecurrenceFrequency('weekly');
+      setRecurrenceInterval(1);
+      setRecurrenceDays([]);
+      setRecurrenceEndDate('');
     }
     setIsSaving(false);
   }, [editingTask, isOpen]);
@@ -48,6 +72,16 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
     if (!title.trim() || duration <= 0 || isSaving) return;
 
     setIsSaving(true);
+    const recurrenceRule: RecurrenceRule | undefined = recurrenceEnabled
+      ? {
+          frequency: recurrenceFrequency,
+          interval: recurrenceInterval,
+          ...(recurrenceFrequency === 'weekly' && recurrenceDays.length > 0
+            ? { daysOfWeek: recurrenceDays }
+            : {}),
+          ...(recurrenceEndDate ? { endDate: recurrenceEndDate } : {}),
+        }
+      : undefined;
     try {
       await onSave({
         ...(editingTask ? { id: editingTask.id } : {}),
@@ -57,7 +91,8 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
         priority,
         due,
         color,
-      });
+        recurrenceRule,
+      } as Partial<Task>);
       onClose();
     } finally {
       setIsSaving(false);
@@ -175,6 +210,93 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
                     );
                   })}
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-bold text-on-surface-variant uppercase tracking-[0.05em]">
+                  <button
+                    type="button"
+                    onClick={() => setRecurrenceEnabled(!recurrenceEnabled)}
+                    className="inline-flex items-center gap-1.5 hover:text-primary transition-colors"
+                  >
+                    <Repeat size={14} className={recurrenceEnabled ? 'text-primary' : ''} />
+                    반복 일정
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${recurrenceEnabled ? 'bg-primary/10 text-primary' : 'bg-surface-container text-on-surface-variant'}`}>
+                      {recurrenceEnabled ? 'ON' : 'OFF'}
+                    </span>
+                  </button>
+                </label>
+                {recurrenceEnabled && (
+                  <div className="space-y-3 p-3 bg-surface-container-lowest border border-outline-variant/20 rounded-lg">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="block text-[10px] text-on-surface-variant">주기</label>
+                        <div className="relative">
+                          <select
+                            value={recurrenceFrequency}
+                            onChange={(e) => setRecurrenceFrequency(e.target.value as RecurrenceFrequency)}
+                            className="w-full px-3 py-2 bg-white border border-outline-variant/20 rounded-md text-sm text-on-surface appearance-none pr-8 focus-visible:ring-2 focus-visible:ring-primary outline-none"
+                          >
+                            <option value="daily">매일</option>
+                            <option value="weekly">매주</option>
+                            <option value="monthly">매월</option>
+                          </select>
+                          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="block text-[10px] text-on-surface-variant">간격</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={99}
+                          value={recurrenceInterval}
+                          onChange={(e) => setRecurrenceInterval(Math.max(1, Number(e.target.value)))}
+                          className="w-full px-3 py-2 bg-white border border-outline-variant/20 rounded-md text-sm text-on-surface focus-visible:ring-2 focus-visible:ring-primary outline-none"
+                        />
+                      </div>
+                    </div>
+                    {recurrenceFrequency === 'weekly' && (
+                      <div className="space-y-1">
+                        <label className="block text-[10px] text-on-surface-variant">요일 선택</label>
+                        <div className="flex gap-1">
+                          {['일', '월', '화', '수', '목', '금', '토'].map((label, idx) => {
+                            const isSelected = recurrenceDays.includes(idx);
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() =>
+                                  setRecurrenceDays(
+                                    isSelected
+                                      ? recurrenceDays.filter((d) => d !== idx)
+                                      : [...recurrenceDays, idx].sort((a, b) => a - b),
+                                  )
+                                }
+                                className={`w-8 h-8 rounded-full text-xs font-medium transition-all ${
+                                  isSelected
+                                    ? 'bg-primary text-white shadow-sm'
+                                    : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    <div className="space-y-1">
+                      <label className="block text-[10px] text-on-surface-variant">종료일 (선택)</label>
+                      <input
+                        type="date"
+                        value={recurrenceEndDate}
+                        onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-outline-variant/20 rounded-md text-sm text-on-surface focus-visible:ring-2 focus-visible:ring-primary outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1.5">

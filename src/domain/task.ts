@@ -1,5 +1,6 @@
 import { type AppError } from './errors';
 import { ok, err, type Result } from './result';
+import { type RecurrenceRule, validateRecurrenceRule } from './recurrence-rule';
 
 /** Task priority tier. */
 export type Priority = 'High' | 'Medium' | 'Low';
@@ -69,6 +70,10 @@ export interface Task {
   readonly completedAt?: number;
   /** Optional display color for timeline blocks. */
   readonly color?: TaskColor;
+  /** Recurrence rule — if set, the task repeats. */
+  readonly recurrenceRule?: RecurrenceRule;
+  /** Groups recurring task instances into a series. */
+  readonly recurrenceGroupId?: string;
   readonly schemaVersion: 2;
 }
 
@@ -84,6 +89,8 @@ export interface CreateTaskInput {
   readonly createdAt: number;
   readonly completedAt?: number;
   readonly color?: string;
+  readonly recurrenceRule?: RecurrenceRule;
+  readonly recurrenceGroupId?: string;
 }
 
 /**
@@ -120,6 +127,17 @@ export function createTask(input: CreateTaskInput): Result<Task, AppError> {
     });
   }
 
+  if (input.recurrenceRule !== undefined) {
+    const ruleError = validateRecurrenceRule(input.recurrenceRule);
+    if (ruleError !== null) {
+      return err({
+        kind: 'validation/invalid-field',
+        field: 'recurrenceRule',
+        reason: ruleError,
+      });
+    }
+  }
+
   const task: Task = {
     id: input.id,
     title: input.title.trim(),
@@ -132,6 +150,8 @@ export function createTask(input: CreateTaskInput): Result<Task, AppError> {
     ...(input.due !== undefined ? { due: input.due } : {}),
     ...(input.completedAt !== undefined ? { completedAt: input.completedAt } : {}),
     ...(input.color !== undefined && TASK_COLORS.includes(input.color as TaskColor) ? { color: input.color as TaskColor } : {}),
+    ...(input.recurrenceRule !== undefined ? { recurrenceRule: input.recurrenceRule } : {}),
+    ...(input.recurrenceGroupId !== undefined ? { recurrenceGroupId: input.recurrenceGroupId } : {}),
   };
 
   return ok(task);

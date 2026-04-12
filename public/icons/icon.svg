@@ -1,4 +1,38 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
-  <rect width="200" height="200" rx="40" fill="#1e293b"/>
-  <text x="100" y="140" font-family="system-ui, -apple-system, sans-serif" font-size="120" font-weight="700" fill="white" text-anchor="middle">P</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background rounded square -->
+  <rect width="512" height="512" rx="108" fill="#E8F5E9"/>
+
+  <!-- Pot -->
+  <path d="M176 370 h160 l-20 82 h-120 z" fill="#C07A4A" stroke="#A0603A" stroke-width="4"/>
+  <rect x="166" y="358" width="180" height="24" rx="6" fill="#D4915E"/>
+
+  <!-- Soil -->
+  <ellipse cx="256" cy="368" rx="76" ry="10" fill="#6B3A1F"/>
+
+  <!-- Main stem -->
+  <path d="M256 360 C256 300, 256 260, 256 200" stroke="#4CAF50" stroke-width="10" stroke-linecap="round" fill="none"/>
+
+  <!-- Left leaf (big, rounded) -->
+  <path d="M256 280 C220 260, 170 230, 160 190 C150 150, 190 130, 220 150 C240 164, 250 200, 256 240" fill="#66BB6A"/>
+  <path d="M256 275 C235 255, 200 230, 185 200" stroke="#4CAF50" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- Right leaf (big, rounded) -->
+  <path d="M256 250 C290 230, 340 210, 355 170 C370 130, 330 110, 300 130 C278 145, 262 180, 256 220" fill="#81C784"/>
+  <path d="M256 245 C280 228, 315 210, 330 185" stroke="#66BB6A" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- Small new leaf (sprout at top) -->
+  <path d="M256 200 C248 175, 235 145, 245 120 C255 100, 270 110, 268 135 C266 155, 258 175, 256 195" fill="#A5D6A7"/>
+
+  <!-- Tiny right sprout leaf -->
+  <path d="M256 210 C265 192, 280 170, 290 160 C300 150, 295 170, 285 185 C275 200, 260 208, 256 210" fill="#C8E6C9"/>
+
+  <!-- Sparkle dots -->
+  <circle cx="190" cy="140" r="5" fill="#FFF9C4" opacity="0.8"/>
+  <circle cx="330" cy="120" r="4" fill="#FFF9C4" opacity="0.7"/>
+  <circle cx="220" cy="105" r="3" fill="#FFF9C4" opacity="0.6"/>
+
+  <!-- Cute face on pot -->
+  <circle cx="236" cy="405" r="6" fill="#6B3A1F"/>
+  <circle cx="276" cy="405" r="6" fill="#6B3A1F"/>
+  <path d="M242 420 Q256 432 270 420" stroke="#6B3A1F" stroke-width="4" stroke-linecap="round" fill="none"/>
 </svg>

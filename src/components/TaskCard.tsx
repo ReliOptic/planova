@@ -1,5 +1,5 @@
 import React from 'react';
-import { GripVertical, Clock, Calendar, Trash2 } from 'lucide-react';
+import { GripVertical, Clock, Calendar, Trash2, Repeat } from 'lucide-react';
 import { Task } from '@/src/types';
 import { cn } from '@/src/lib/utils';
 import { formatDuration, formatDueDate, getLocalToday } from '@/src/utils/date-utils';
@@ -69,7 +69,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete }) =>
         </div>
       </div>
 
-      <h3 className="font-semibold text-on-surface mb-2 font-headline">{task.title}</h3>
+      <div className="flex items-center gap-1.5 mb-2">
+        <h3 className="font-semibold text-on-surface font-headline">{task.title}</h3>
+        {task.recurrenceRule && (
+          <Repeat size={13} className="text-primary shrink-0" title="반복 작업" />
+        )}
+      </div>
       
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-on-surface-variant text-xs">
