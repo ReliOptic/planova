@@ -1,70 +1,77 @@
 # TODOS
 
-## Phase 1: Schedule Spine
+## Completed (B3 Roadmap)
 
-### Admin Bootstrap
-- Auto-create `users/{uid}` doc on first login with `role: 'user'`
-- Document in README how to promote first admin via Firestore console
-- **Why:** Removing hardcoded admin email leaves no entry point for the role-based admin system
-- **Depends on:** Firestore rules update (remove hardcoded email)
+### Data Model Split (Plan A)
+- ✅ Task ↔ ScheduleBlock decoupled — resize path no longer mutates `Task.durationMinutes`
+- ✅ `blockDurationMinutes` derived field added to `TaskViewModel`
+- ✅ Timeline components use `blockDurationMinutes ?? durationMinutes`
+- ✅ `ExternalCalendarEvent` type defined (`src/domain/external-calendar-event.ts`) — Phase 3 placeholder
+- ✅ Timezone bug fixed in resize path (direct UTC arithmetic instead of `buildUTCTime`)
 
-### HistoryView Empty State
-- Replace hardcoded demo data with empty state UI after deleting constants.ts
-- Show: "No completed tasks yet. Complete tasks from your timeline to see your velocity here."
-- **Why:** Prevents broken History tab between Phase 1 (delete demo data) and Phase 2 (wire real data)
-- **Depends on:** Deleting constants.ts
+### Tauri 2 Shell Conversion
+- ✅ `src-tauri/` scaffolded (Cargo.toml, main.rs, lib.rs, tauri.conf.json, capabilities)
+- ✅ `vite-plugin-pwa`, `workbox-window`, service worker registration removed
+- ✅ `public/_headers`, `public/_redirects`, `broadcast.ts`, `register-sw.ts` deleted
+- ✅ Vite config migrated: `base: './'`, `target: chrome120`, `clearScreen: false`, `strictPort: true`
+- ✅ CSP moved to `tauri.conf.json` (`connect-src` allows `openrouter.ai`)
+- ✅ Single-instance enforcement via `tauri-plugin-single-instance`
+- ✅ Backup Export/Import wired to native file dialogs (`tauri-plugin-dialog` + `tauri-plugin-fs`)
+- ✅ Bundle config: MSI + NSIS, `com.planova.app` identifier
+- ✅ CI workflow: GitHub Actions with `ubuntu-latest` test + `windows-latest` tauri build
+- ✅ Smoke test checklist: `docs/SMOKE.md`
+- ✅ README rewritten for desktop-only target
 
-### Firestore Composite Indexes
-- Create `firestore.indexes.json` with indexes: `uid + status`, `uid + status + completedAt`, `uid + startTime`
-- Include in setup docs and README
-- **Why:** Status-based queries require composite indexes. Without them, queries fail at runtime.
-- **Depends on:** Status-based query strategy
+### AI Recommendation Engine
+- ✅ Pattern detector: weekday-time, recurring-title, title-cluster detectors
+- ✅ Heuristic recommender: deterministic recommendations (works offline)
+- ✅ LLM recommender: OpenRouter-based enrichment with JSON schema validation, 10s timeout, graceful fallback
+- ✅ `useRecommendations` hook: orchestrates pipeline, daily LLM limit (2/day), 7-day pattern cooldown
+- ✅ `RecommendationsPanel` component in Sidebar: accept → create Task, dismiss → 7-day hide
+- ✅ Settings toggle: "작업 추천 사용" checkbox in AI section
 
-### Critical Error Handling Gaps
-- Add error handling for localStorage write failures in Settings (storage full or disabled)
-- Add user-visible feedback for failed Firestore operations (currently console.error only)
-- Add confirmation + error handling for concurrent task deletion
-- **Why:** 2 critical failure modes with silent failures identified in review
+## Phase 4 (Post-B3)
 
-### Create DESIGN.md via /design-consultation
-- Document the existing design system: Material Design 3 tokens, Manrope+Inter typography, 5-level surface hierarchy, component patterns, state color map
-- Include: color tokens, spacing scale, border radius convention, typography scale, component inventory
-- **Why:** Implicit design system works for solo dev but breaks when contributors guess patterns. Documented system prevents drift.
-- **Depends on:** Phase 1 completion (so the design system is stable before documenting)
+### API Key Security Upgrade
+- Migrate API key storage from plaintext IndexedDB to OS keyring (Windows Credential Manager)
+- Consider `tauri-plugin-stronghold` or system keyring wrapper
+- Requires migration logic for existing users
+- **Why:** Desktop app has better options than browser storage, but adds Rust-side complexity and UX changes (master password)
 
-### Data Model Split (CEO Review — Codex finding)
-- Split single Task type into: `Task` (backlog item), `ScheduleBlock` (time allocation on timeline), `ExternalCalendarEvent` (GCal read-only, Phase 3 type definition only)
-- Task has many ScheduleBlocks. ScheduleBlock references parent Task.
-- Add `schemaVersion: number` to all documents for versioned migration
-- **Why:** Overloaded Task record becomes unmaintainable when GCal sync and AI scheduling land. Codex flagged this as the #1 architectural concern.
-- **Effort:** M (CC: ~15 min)
-- **Priority:** P1 — foundation change, do first
-- **Depends on:** Nothing. Blocks everything else in Phase 1.
+### Code Signing
+- Obtain Azure Trusted Signing or OV code signing certificate
+- Integrate into `tauri:build` pipeline
+- **Why:** Removes SmartScreen first-launch warning for end users
 
-### Timeline 15-min Snap Grid (CEO Review — Codex finding)
-- Implement 15-minute snap grid for drag-to-schedule
-- Tasks visually sized by their actual duration (not fixed 1-hour blocks)
-- No collision prevention (tasks can stack/overlap visually)
-- Tasks extending past workday end show clip indicator
-- **Why:** Without this, any non-1-hour task renders incorrectly on the timeline. The current drag primitive is "drop on hour slot = 1 hour" which breaks with 15m/30m/2h tasks.
-- **Effort:** S (CC: ~10 min)
-- **Priority:** P1 — blocks Phase 1 timeline rewrite
-- **Depends on:** getTaskPosition rewrite, Data Model Split
+### Auto-Update
+- Set up `tauri-plugin-updater` with a static file server (GitHub Releases or S3)
+- **Why:** Currently users must manually re-download and install new versions
 
-### Defer Projects & Analytics Tabs (CEO Review — scope reduction)
-- Defer Projects tab (task grouping by project) and Analytics tab (time-per-project, completion trends) to post-Phase 3
-- Remove or hide Projects/Analytics nav items in Phase 1 to avoid dead UI
-- Phase 2 slimmed to: History + Settings only
-- **Why:** Proves GCal thesis faster. Projects and Analytics aren't blocking for the core scheduling loop.
-- **Effort:** S to remove nav items. M to build later.
-- **Priority:** P3 (post-GCal)
-- **Depends on:** Phase 3 completion, real usage data
+### Native OS Features
+- System tray icon with status display
+- Startup on boot option
+- OS toast notifications for overdue tasks
+- **Why:** Enhances desktop integration, but not needed for MVP
 
-### Basic Accessibility Pass
-- Add focus rings (`:focus-visible`) on all interactive elements
-- Add `aria-label` on icon-only buttons (logout, add task, nav collapse, complete, delete)
-- Add skip-nav link for keyboard users
-- Add `aria-live="polite"` region for toast notifications
-- Add `role="main"`, `role="navigation"`, `role="complementary"` landmarks
-- **Why:** Zero a11y in current code. For open source, basic a11y is the difference between usable and hostile.
-- **Depends on:** Phase 1 completion
+### Multi-Block Scheduling
+- Allow a single Task to have multiple ScheduleBlocks (spread across days)
+- Update `composeViewModels` to return `scheduleBlockIds: readonly string[]`
+- New UI for split-scheduling
+- **Why:** Current 1:1 assumption limits multi-day task planning
+
+### Google Calendar Sync (Phase 3)
+- Implement `ExternalCalendarEvent` ingestion via Google Calendar API
+- Add Dexie repository + table for external events
+- Read-only timeline overlay
+- **Why:** The `ExternalCalendarEvent` type is defined but has no plumbing yet
+
+### Projects & Analytics
+- Task grouping by project
+- Time-per-project tracking, completion trends
+- **Why:** Deferred from original Phase 2 to focus on core scheduling loop
+
+### Accessibility
+- Focus rings (`:focus-visible`) on all interactive elements
+- `aria-label` on icon-only buttons
+- Skip-nav link, `aria-live` for toasts
+- Landmark roles (`main`, `navigation`, `complementary`)

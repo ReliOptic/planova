@@ -114,7 +114,7 @@ const WeekDayColumn: React.FC<WeekDayColumnProps> = ({ date, tasks, slots, onEdi
         key={task.id}
         task={task}
         topPx={computePosition(task.startTime!, workStartHour, SLOT_HEIGHT_PX)}
-        heightPx={computeBlockHeight(task.duration, SLOT_HEIGHT_PX)}
+        heightPx={computeBlockHeight(task.blockDurationMinutes ?? task.duration, SLOT_HEIGHT_PX)}
         onEdit={() => onEditTask(task)}
         onComplete={() => onCompleteTask(task.id)}
         onDelete={() => onDeleteTask(task.id)}

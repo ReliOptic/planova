@@ -6,6 +6,11 @@ import { buildUTCTime } from '../utils/date-utils';
 import { getWorkHours } from '../utils/settings';
 import { logError, deleteBlocksForTask } from './use-task-crud';
 
+/** Shift an ISO 8601 UTC datetime by a signed number of minutes, preserving precision. */
+function shiftIsoMinutes(isoUtc: string, deltaMinutes: number): string {
+  return new Date(Date.parse(isoUtc) + deltaMinutes * 60_000).toISOString();
+}
+
 /**
  * handleDragEnd — routes drag events to schedule-on-slot or move-to-pending.
  */
@@ -123,27 +128,27 @@ export async function handleResizeTask(
   }
 }
 
+/**
+ * Drag-resize paths update the ScheduleBlock only. Task.durationMinutes
+ * is the planned estimate and is intentionally decoupled from the actual
+ * block placement — an edit to the block does not rewrite the plan.
+ *
+ * New start/end times are computed via direct UTC millisecond arithmetic to
+ * avoid a prior bug where `buildUTCTime` (which interprets its hour/minute
+ * arguments as local time) was fed UTC hours, silently double-converting in
+ * any timezone other than UTC.
+ */
 async function resizeTop(
   task: TaskViewModel,
   deltaMinutes: number,
   showToast: (msg: string, type?: 'error' | 'success') => void,
 ): Promise<void> {
-  const startDate = new Date(task.startTime!);
-  const newStartMs = startDate.getTime() + deltaMinutes * 60_000;
-  const newStart = new Date(newStartMs);
-  const newDuration = task.durationMinutes - deltaMinutes;
-  if (newDuration < 15) return;
-  const startTime = buildUTCTime(
-    task.scheduledDate!,
-    newStart.getUTCHours(),
-    newStart.getUTCMinutes(),
-  );
-  const taskRes = await taskRepository.update(task.id, { durationMinutes: newDuration });
-  if (!taskRes.ok) {
-    logError('task-action/resize-top-task', taskRes.error);
-    showToast('Failed to resize task.');
-    return;
-  }
+  const currentLength = task.blockDurationMinutes ?? task.durationMinutes;
+  const newLength = currentLength - deltaMinutes;
+  if (newLength < 15) return;
+
+  const startTime = shiftIsoMinutes(task.startTime!, deltaMinutes);
+
   const blockRes = await scheduleBlockRepository.update(task.scheduleBlockId!, { startTime });
   if (!blockRes.ok) {
     logError('task-action/resize-top-block', blockRes.error);
@@ -156,22 +161,12 @@ async function resizeBottom(
   deltaMinutes: number,
   showToast: (msg: string, type?: 'error' | 'success') => void,
 ): Promise<void> {
-  const newDuration = task.durationMinutes + deltaMinutes;
-  if (newDuration < 15) return;
-  const startDate = new Date(task.startTime!);
-  const endMs = startDate.getTime() + newDuration * 60_000;
-  const newEnd = new Date(endMs);
-  const endTime = buildUTCTime(
-    task.scheduledDate!,
-    newEnd.getUTCHours(),
-    newEnd.getUTCMinutes(),
-  );
-  const taskRes = await taskRepository.update(task.id, { durationMinutes: newDuration });
-  if (!taskRes.ok) {
-    logError('task-action/resize-bottom-task', taskRes.error);
-    showToast('Failed to resize task.');
-    return;
-  }
+  const currentLength = task.blockDurationMinutes ?? task.durationMinutes;
+  const newLength = currentLength + deltaMinutes;
+  if (newLength < 15) return;
+
+  const endTime = new Date(Date.parse(task.startTime!) + newLength * 60_000).toISOString();
+
   const blockRes = await scheduleBlockRepository.update(task.scheduleBlockId!, { endTime });
   if (!blockRes.ok) {
     logError('task-action/resize-bottom-block', blockRes.error);

@@ -2,14 +2,19 @@ import type { Task } from '../domain/task';
 import type { ScheduleBlock } from '../domain/schedule-block';
 
 /**
- * TaskViewModel — UI projection of a v2 domain Task.
+ * TaskViewModel — UI projection of a v2 domain Task, optionally joined with
+ * the first associated ScheduleBlock.
  *
- * Extends Task with a `duration` alias (mirrors `durationMinutes`) and optional
- * schedule fields from the associated ScheduleBlock. Components continue to
- * use the flat shape they expect without knowing about the v2 split.
+ * Design note on duration:
+ * - `durationMinutes` (inherited from Task) is the user's *planned* estimate.
+ * - `blockDurationMinutes` (derived) is the *actual* length of the placed
+ *   ScheduleBlock. These can diverge: dragging the block bottom edge resizes
+ *   the block only, without rewriting the plan.
+ * - UI rendering that cares about "how tall is the block on the timeline"
+ *   should prefer `blockDurationMinutes ?? durationMinutes`.
  */
 export interface TaskViewModel extends Task {
-  /** Alias for durationMinutes — keeps UI components unchanged. */
+  /** Alias for durationMinutes — kept for components that render planned effort. */
   readonly duration: number;
   /** YYYY-MM-DD date of the associated ScheduleBlock, if any. */
   readonly scheduledDate?: string;
@@ -19,14 +24,21 @@ export interface TaskViewModel extends Task {
   readonly endTime?: string;
   /** Id of the associated ScheduleBlock, if any. */
   readonly scheduleBlockId?: string;
+  /**
+   * Actual length of the associated ScheduleBlock in minutes, if any.
+   * Derived from endTime − startTime. Absent when no block is joined.
+   */
+  readonly blockDurationMinutes?: number;
 }
 
 /**
- * composeViewModels — joins Tasks with their first ScheduleBlock (if any).
+ * composeViewModels — joins Tasks with their associated ScheduleBlock.
  *
- * Each Task maps to exactly one TaskViewModel. The first ScheduleBlock with
- * matching `taskId` is merged in (Phase 1: 1:1 relationship). Tasks without
- * a ScheduleBlock get undefined schedule fields.
+ * The first ScheduleBlock with matching `taskId` is merged into each Task.
+ * Tasks without a ScheduleBlock get undefined schedule fields. The UI layer
+ * currently renders one block per task; the multi-block case is reserved for
+ * a future iteration and is handled by pushing extra blocks into `blockDurationMinutes`
+ * / projection logic at that point — not here.
  *
  * @param tasks  - All tasks from the task repository.
  * @param blocks - All schedule blocks from the schedule-block repository.
@@ -45,17 +57,24 @@ export function composeViewModels(
 
   return tasks.map((task): TaskViewModel => {
     const block = blockByTaskId.get(task.id);
+    if (block === undefined) {
+      return {
+        ...task,
+        duration: task.durationMinutes,
+      };
+    }
+    const blockDurationMinutes = Math.max(
+      0,
+      Math.round((Date.parse(block.endTime) - Date.parse(block.startTime)) / 60_000),
+    );
     return {
       ...task,
       duration: task.durationMinutes,
-      ...(block !== undefined
-        ? {
-            scheduledDate: block.scheduledDate,
-            startTime: block.startTime,
-            endTime: block.endTime,
-            scheduleBlockId: block.id,
-          }
-        : {}),
+      scheduledDate: block.scheduledDate,
+      startTime: block.startTime,
+      endTime: block.endTime,
+      scheduleBlockId: block.id,
+      blockDurationMinutes,
     };
   });
 }

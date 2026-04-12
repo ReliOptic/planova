@@ -1,132 +1,125 @@
 # Planova
 
-오프라인-우선 비주얼 타임라인 스케줄러. PWA, 로컬 저장, 로그인 없음.
+오프라인-우선 비주얼 타임라인 스케줄러. Windows 11 데스크톱 앱. 로컬 저장, 로그인 없음.
 
 ## Features
 
-- **15분 스냅 드래그앤드롭 타임라인** - 백로그에서 일정으로 작업을 드래그하고, 타임라인 위에서 위치 조정 및 리사이즈.
-- **Task 4상태 라이프사이클** - Pending → Scheduled → In Progress → Completed.
-- **블록 리사이즈 및 오버듀 감지** - 시작/종료 시간 드래그로 수정, 마감 지난 작업 자동 플래그.
-- **현재 시간 마커** - 오늘의 타임라인에 빨간 선으로 현재 위치 표시.
-- **100% 오프라인** - IndexedDB 로컬 저장, 서버 없음, 로그인 없음.
-- **PWA 설치 가능** - 홈 화면 또는 앱 목록에 설치, 브라우저 없이 독립 앱으로 동작.
-- **JSON Export/Import 백업** - Settings에서 데이터 내보내기 및 복원 가능.
-- **선택적 OpenRouter AI 통합** - 사용자 API 키로 모델 선택, 오프라인 시 자동 비활성.
-- **멀티탭 동기화** - 같은 브라우저의 여러 탭 간 실시간 데이터 동기화 (Dexie liveQuery + BroadcastChannel).
+- **15분 스냅 드래그앤드롭 타임라인** — 백로그에서 일정으로 작업을 드래그하고, 타임라인 위에서 위치 조정 및 리사이즈.
+- **Task 4상태 라이프사이클** — Pending → Scheduled → In Progress → Completed.
+- **블록 리사이즈 및 오버듀 감지** — 시작/종료 시간 드래그로 수정, 마감 지난 작업 자동 플래그.
+- **계획 / 실제 분리** — `Task.durationMinutes`는 계획, `ScheduleBlock`은 실제 배치. 블록 리사이즈가 플랜을 덮어쓰지 않음.
+- **현재 시간 마커** — 오늘의 타임라인에 빨간 선으로 현재 위치 표시.
+- **100% 오프라인** — IndexedDB(WebView2 내부) 로컬 저장, 서버 없음, 로그인 없음.
+- **네이티브 JSON Export/Import 백업** — OS 파일 다이얼로그로 데이터 내보내기 및 복원.
+- **선택적 OpenRouter AI 통합** — 사용자 API 키로 모델 선택, 오프라인 시 자동 비활성.
+- **주기성 기반 작업 추천** — 완료 히스토리에서 요일/시간 패턴을 로컬로 감지, 온라인일 때 LLM이 자연어 문장으로 포장.
 
 ## Tech Stack
 
-- React 19 + TypeScript (strict)
-- Vite 6
-- Tailwind CSS v4
-- Dexie (IndexedDB)
-- vite-plugin-pwa + Workbox
-- dnd-kit (drag and drop)
-- Motion (animations)
-- DOMPurify (input sanitization)
-- Vitest (unit + integration)
+- **Shell:** Tauri 2 (Rust) on Windows 11 WebView2
+- **Frontend:** React 19 + TypeScript strict, Vite 6, Tailwind CSS v4
+- **Storage:** Dexie (IndexedDB in WebView2 profile)
+- **Drag & Drop:** dnd-kit
+- **Animations:** Motion
+- **Sanitization:** DOMPurify
+- **Tests:** Vitest + happy-dom
 
-## Getting Started
+## Prerequisites
 
-**Prerequisites:** Node.js 20+
+- **Node.js** 20+
+- **Rust** 1.77+ (install via https://rustup.rs)
+- **Visual Studio Build Tools 2022** with the "Desktop development with C++" workload
+- **WebView2 Runtime** — ships with Windows 11 by default
+- (Optional) **WiX Toolset 3.14** or **NSIS** — Tauri's bundler will download these on first `tauri build` if absent
 
-No `.env` file required. No Firebase config. No API keys needed for core features.
+## Development
 
 ```bash
 npm install
-npm run dev        # localhost:3000
-npm run build      # production build to dist/
-npm run preview    # preview production build
-npm test           # run Vitest
+npm run tauri:dev     # boots Vite dev server + Tauri shell
 ```
 
-첫 실행 시 자동으로 로컬 DB가 생성됩니다.
+On first run Rust downloads and compiles dependencies into `src-tauri/target/` — expect several minutes. Subsequent runs are fast.
 
-## Usage
+## Build (MSI + NSIS installers)
 
-- 첫 실행 시 자동으로 로컬 DB 생성
-- 브라우저 주소창의 설치 아이콘으로 PWA 설치 가능
-- 새로고침/오프라인 상태에서도 동일하게 동작
-- 데이터는 브라우저 IndexedDB에만 저장 (이 기기 전용)
+```bash
+npm run tauri:build
+```
 
-## Backup / Restore
+Artifacts land in `src-tauri/target/release/bundle/`:
 
-Settings → 백업 / 복원
+- `msi/Planova_*_x64_en-US.msi`
+- `nsis/Planova_*_x64-setup.exe`
 
-- **내보내기** - JSON 파일 다운로드
-- **가져오기** - JSON 파일 선택 → "교체" 또는 "병합" 선택
+### 코드 사이닝
 
-백업 파일에는 Task + ScheduleBlock만 포함됩니다 (AI 키, 로그, 캐시 제외).
-
-## AI Assistant (Optional)
-
-Settings → AI 어시스턴트 (선택)
-
-- OpenRouter API 키와 원하는 모델 ID 입력
-- 네트워크 연결 시에만 동작, 오프라인 시 자동 비활성
-- 클라이언트 측 요청 제한 (10 req / 10 분) 및 24시간 응답 캐시
-
-**경고**: API 키는 이 브라우저의 IndexedDB에 평문으로 저장됩니다. 공용 기기에서는 사용하지 마세요.
-
-모델 예시 (사용자 선택): `mistralai/mistral-small-latest`, `google/gemini-2.0-flash-lite`, `openai/gpt-4o-mini` 등. OpenRouter 대시보드에서 사용량/비용 확인.
+현재 빌드는 **미서명**입니다. Windows SmartScreen이 첫 실행 시 경고를 표시할 수 있으며, "자세히 → 실행"으로 넘길 수 있습니다. 향후 Azure Trusted Signing 또는 OV 인증서로 서명할 계획입니다.
 
 ## Scripts
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start dev server on port 3000 |
-| `npm run build` | Production build to `dist/` |
-| `npm run preview` | Preview production build |
-| `npm run clean` | Remove `dist/` directory |
-| `npm run lint` | Type-check with `tsc --noEmit` |
+| `npm run dev` | Vite dev server only (localhost:3000) — 보통 `tauri:dev`에서 간접 호출됨 |
+| `npm run build` | Vite 프로덕션 번들 (`dist/`) — `tauri:build`가 전처리로 호출 |
+| `npm run preview` | 브라우저에서 프로덕션 번들 프리뷰 (디버깅용) |
+| `npm run lint` | TypeScript `tsc --noEmit` |
+| `npm test` | Vitest 유닛·통합 스위트 |
+| `npm run tauri:dev` | Tauri 데스크톱 앱 개발 실행 |
+| `npm run tauri:build` | MSI + NSIS 인스톨러 빌드 |
+| `npm run clean` | `dist/` 제거 |
 
-## Deployment (Cloudflare Pages)
+## Data Location
 
-### Prerequisites
+모든 사용자 데이터는 Windows의 WebView2 프로필 내부 IndexedDB에 저장됩니다:
 
-- Cloudflare account
-- Cloudflare Pages project created
-
-### Setup
-
-You can deploy via Git integration or the wrangler CLI.
-
-**Git Integration (Recommended):**
-1. Connect your GitHub repository to Cloudflare Pages
-2. Configure build settings:
-   - **Build command:** `npm run build`
-   - **Build output directory:** `dist`
-   - **Node version:** 20
-
-**Or using wrangler CLI:**
 ```
-npm install -g wrangler
-wrangler pages deploy dist
+%LOCALAPPDATA%\com.planova.app\EBWebView\Default\IndexedDB\
 ```
 
-### Configuration
+앱 언인스톨러는 이 디렉터리를 삭제하지 않습니다. 완전히 지우려면 수동 삭제하세요.
 
-The project is pre-configured with deployment settings:
-- `public/_headers` — HTTP security headers and caching rules applied automatically
-- `public/_redirects` — Single-page app fallback (all routes → `index.html`)
-- PWA service worker auto-generated by `vite-plugin-pwa` with asset precaching
+## Backup / Restore
 
-These files are automatically copied from `public/` to `dist/` during the build process.
+Settings → 백업 / 복원
 
-### Free Tier Notes
+- **내보내기** — 네이티브 저장 다이얼로그로 JSON 파일 저장
+- **가져오기** — 네이티브 열기 다이얼로그에서 JSON 선택 → "교체" 또는 "병합"
 
-Cloudflare Pages free tier includes:
-- Unlimited bandwidth
-- 500 builds per month
-- Automatic HTTPS
-- Global CDN distribution
-- Default subdomain: `<project-name>.pages.dev`
+백업 파일에는 Task + ScheduleBlock만 포함됩니다 (AI 키, 로그, 캐시 제외).
 
-### Security
+## AI Assistant (Optional)
 
-Content Security Policy enforces:
-- Local scripts and styles only (Tailwind v4 inlines styles via `'unsafe-inline'`)
-- External API connections limited to `https://openrouter.ai`
-- Service worker restricted to same-origin
-- No embedded iframes or form submissions to external URLs
-- Strict referrer policy and frame-ancestor restrictions
+Settings → AI 어시스턴트
+
+- OpenRouter API 키와 원하는 모델 ID 입력
+- 네트워크 연결 시에만 동작, 오프라인 시 자동 비활성
+- 클라이언트 측 요청 제한 (10 req / 10 분) 및 24시간 응답 캐시
+- **주기성 작업 추천**: 완료된 ScheduleBlock 4주분 이상 + 10건 이상 쌓이면 활성화
+
+**경고**: API 키는 WebView2 프로필 내 IndexedDB에 평문 저장됩니다. 공용 PC에서는 사용하지 마세요. OS 키링 이전은 Phase 4 항목으로 연기되어 있습니다.
+
+모델 예시: `mistralai/mistral-small-latest`, `google/gemini-2.0-flash-lite`, `openai/gpt-4o-mini`. OpenRouter 대시보드에서 사용량/비용 확인.
+
+## Security
+
+- Content Security Policy는 `src-tauri/tauri.conf.json`의 `app.security.csp`에서 관리.
+- 외부 네트워크 연결은 `https://openrouter.ai`만 허용.
+- Tauri capabilities(`src-tauri/capabilities/main.json`)에서 파일 시스템은 사용자의 Documents / Downloads / Desktop / Home 하위로 제한.
+- 싱글 인스턴스 강제 (두 번째 실행 시 기존 창에 포커스).
+
+## Project Layout
+
+```
+src/                 React 프런트엔드 (도메인/서비스/컴포넌트 계층)
+  domain/            순수 타입 및 팩토리 (Task, ScheduleBlock, ExternalCalendarEvent 등)
+  services/          애플리케이션 서비스 (view-model, backup, recommendation)
+  infrastructure/    Dexie 리포지터리, OpenRouter 클라이언트, 로거
+  hooks/             React 훅 (드래그, 리사이즈, CRUD)
+  components/        UI 컴포넌트
+src-tauri/           Tauri 2 Rust 셸
+  src/lib.rs         싱글 인스턴스 + 파일 다이얼로그 플러그인
+  tauri.conf.json    CSP, 번들 설정, 창 설정
+  capabilities/      Tauri capability(권한) 정의
+tests/unit/          Vitest 유닛 테스트
+```

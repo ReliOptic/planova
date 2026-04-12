@@ -179,7 +179,7 @@ export const DayColumn: React.FC<DayColumnProps> = ({
             key={task.id}
             task={task}
             topPx={computePosition(task.startTime!, workStart, SLOT_HEIGHT_PX)}
-            heightPx={computeBlockHeight(task.duration, SLOT_HEIGHT_PX)}
+            heightPx={computeBlockHeight(task.blockDurationMinutes ?? task.duration, SLOT_HEIGHT_PX)}
             onComplete={() => onCompleteTask(task.id)}
             onStart={() => onStartTask(task.id)}
             onEdit={() => onEditTask(task)}

@@ -1,7 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createAiCredential } from '../domain/ai-credential';
 import type { IAiCredentialRepository } from '../infrastructure/persistence/ai-credential-repository';
 import { useOnlineStatus } from '../hooks/use-online-status';
+
+function loadRecEnabled(): boolean {
+  try {
+    const raw = localStorage.getItem('planova-rec-enabled');
+    return raw === null ? true : raw === 'true';
+  } catch {
+    return true;
+  }
+}
 
 interface Toast {
   readonly text: string;
@@ -28,8 +37,19 @@ export const SettingsAiSection: React.FC<Props> = ({ credentialRepository }) => 
   const [model, setModel] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
+  const [recEnabled, setRecEnabled] = useState(loadRecEnabled);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isOnline = useOnlineStatus();
+
+  const handleToggleRec = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.checked;
+    setRecEnabled(value);
+    try {
+      localStorage.setItem('planova-rec-enabled', String(value));
+    } catch {
+      // storage full — toggle still applies until reload.
+    }
+  }, []);
 
   useEffect(() => {
     void credentialRepository.get().then((result) => {
@@ -166,6 +186,24 @@ export const SettingsAiSection: React.FC<Props> = ({ credentialRepository }) => 
             {toast.text}
           </p>
         )}
+      </div>
+
+      {/* Recommendation toggle */}
+      <div className="mt-6 pt-4 border-t border-outline-variant/20">
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={recEnabled}
+            onChange={handleToggleRec}
+            className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary"
+          />
+          <div>
+            <span className="text-sm font-semibold text-on-surface">작업 추천 사용</span>
+            <p className="text-[10px] text-on-surface-variant mt-0.5">
+              완료 히스토리에서 주기성을 감지하고 새 작업을 추천합니다 (일 최대 2회 LLM 호출).
+            </p>
+          </div>
+        </label>
       </div>
     </section>
   );

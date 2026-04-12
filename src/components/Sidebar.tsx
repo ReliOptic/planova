@@ -1,6 +1,8 @@
 import React from 'react';
 import { LayoutDashboard, History, Settings, Plus } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
+import { RecommendationsPanel } from './recommendations-panel';
+import { useRecommendations } from '../hooks/use-recommendations';
 
 interface SidebarProps {
   activeTab: string;
@@ -11,6 +13,8 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onAddTask, pendingCount, completedCount }) => {
+  const { recommendations, completionsNeeded, loading, accept, dismiss } = useRecommendations();
+
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: pendingCount },
     { id: 'history', label: 'History', icon: History, badge: completedCount },
@@ -48,6 +52,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onAdd
           </button>
         ))}
       </nav>
+
+      <RecommendationsPanel
+        recommendations={recommendations}
+        completionsNeeded={completionsNeeded}
+        loading={loading}
+        onAccept={(rec) => void accept(rec)}
+        onDismiss={(rec) => void dismiss(rec)}
+      />
 
       <div className="mt-auto space-y-1 pt-6 border-t border-surface-container-high">
         <button

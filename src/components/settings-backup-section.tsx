@@ -1,9 +1,11 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { BackupService } from '@/src/services/backup-service';
 import { db } from '@/src/infrastructure/persistence/db';
-import { isBackupBundle, type BackupBundle } from '@/src/domain/backup-bundle';
-import { downloadJson } from '@/src/utils/file-io';
-import { readJsonFile } from '@/src/utils/file-io';
+import type { BackupBundle } from '@/src/domain/backup-bundle';
+import {
+  exportBackupViaDialog,
+  importBackupViaDialog,
+} from '@/src/infrastructure/tauri/backup-io';
 import type { ImportSummary } from '@/src/services/backup-service';
 
 const backupService = new BackupService(db);
@@ -20,10 +22,10 @@ interface Props {
 
 /**
  * SettingsBackupSection — "백업 / 복원" section for SettingsPage.
- * Handles export to JSON and import via file picker with replace/merge modes.
+ *
+ * Native Tauri file dialogs for export/import. No browser File API.
  */
 export const SettingsBackupSection: React.FC<Props> = ({ onMessage }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [importing, setImporting] = useState(false);
 
@@ -34,27 +36,27 @@ export const SettingsBackupSection: React.FC<Props> = ({ onMessage }) => {
       onMessage(`내보내기 실패: ${detail}`, true);
       return;
     }
-    const date = new Date().toISOString().slice(0, 10);
-    downloadJson(`planova-backup-${date}.json`, result.value);
-    onMessage('백업 파일이 다운로드되었습니다.', false);
+    const saved = await exportBackupViaDialog(result.value);
+    if (!saved.ok) {
+      const detail = 'cause' in saved.error ? saved.error.cause : saved.error.kind;
+      onMessage(`내보내기 실패: ${detail}`, true);
+      return;
+    }
+    if (saved.value === null) {
+      // User cancelled the dialog — silent, not an error.
+      return;
+    }
+    onMessage('백업 파일이 저장되었습니다.', false);
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    // Reset so same file can be picked again
-    e.target.value = '';
-
-    const readResult = await readJsonFile(file);
+  const handlePickFile = async () => {
+    const readResult = await importBackupViaDialog();
     if (!readResult.ok) {
-      onMessage(`파일 읽기 실패: ${readResult.error.kind}`, true);
+      const detail = 'cause' in readResult.error ? readResult.error.cause : readResult.error.kind;
+      onMessage(`가져오기 실패: ${detail}`, true);
       return;
     }
-
-    if (!isBackupBundle(readResult.value)) {
-      onMessage('유효하지 않은 백업 파일입니다.', true);
-      return;
-    }
+    if (readResult.value === null) return; // User cancelled.
 
     const bundle = readResult.value;
     setConfirm({
@@ -102,18 +104,11 @@ export const SettingsBackupSection: React.FC<Props> = ({ onMessage }) => {
             내보내기
           </button>
           <button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={handlePickFile}
             className={`${btnClass} bg-surface-container border border-outline-variant/30 text-on-surface hover:bg-surface-container-high`}
           >
             가져오기
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/json,.json"
-            className="hidden"
-            onChange={handleFileChange}
-          />
         </div>
       </section>
 
