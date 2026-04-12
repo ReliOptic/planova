@@ -27,6 +27,7 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
   const [recurrenceInterval, setRecurrenceInterval] = useState(1);
   const [recurrenceDays, setRecurrenceDays] = useState<number[]>([]);
   const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
+  const [group, setGroup] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   // Pre-fill when editing
@@ -38,6 +39,7 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
       setPriority(editingTask.priority);
       setDue(editingTask.due);
       setColor(editingTask.color);
+      setGroup(editingTask.group ?? '');
       if (editingTask.recurrenceRule) {
         setRecurrenceEnabled(true);
         setRecurrenceFrequency(editingTask.recurrenceRule.frequency);
@@ -58,6 +60,7 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
       setPriority('Medium');
       setDue(getLocalToday());
       setColor(undefined);
+      setGroup('');
       setRecurrenceEnabled(false);
       setRecurrenceFrequency('weekly');
       setRecurrenceInterval(1);
@@ -92,6 +95,7 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
         due,
         color,
         recurrenceRule,
+        group: group.trim() || undefined,
       } as Partial<Task>);
       onClose();
     } finally {
@@ -210,6 +214,17 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
                     );
                   })}
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-bold text-on-surface-variant uppercase tracking-[0.05em]">Group</label>
+                <input
+                  value={group}
+                  onChange={(e) => setGroup(e.target.value)}
+                  className="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant/20 rounded-lg text-on-surface focus-visible:ring-2 focus-visible:ring-primary outline-none transition-all"
+                  placeholder="예: 업무, 개인, 운동..."
+                  maxLength={50}
+                />
               </div>
 
               <div className="space-y-1.5">

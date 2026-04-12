@@ -211,6 +211,7 @@ async function updateExistingTask(
     color: taskData.color,
     recurrenceRule: taskData.recurrenceRule,
     recurrenceGroupId: taskData.recurrenceGroupId,
+    group: taskData.group,
   };
 
   if (
@@ -302,6 +303,7 @@ async function createNewTask(
     createdAt: Date.now(),
     ...(taskData.description ? { description: sanitizeText(taskData.description) } : {}),
     ...(taskData.recurrenceRule ? { recurrenceRule: taskData.recurrenceRule, recurrenceGroupId } : {}),
+    ...(taskData.group ? { group: taskData.group } : {}),
   });
 
   if (!taskValidation.ok) {

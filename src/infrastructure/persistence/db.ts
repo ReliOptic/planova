@@ -75,6 +75,15 @@ export class PlanovaDatabase extends Dexie {
       aiCache: 'key, createdAt',
       logs: '++id, ts, level',
     });
+
+    this.version(6).stores({
+      tasks: 'id, status, createdAt, recurrenceGroupId, group',
+      scheduleBlocks: 'id, taskId, scheduledDate',
+      meta: 'key',
+      aiCredentials: 'provider',
+      aiCache: 'key, createdAt',
+      logs: '++id, ts, level',
+    });
   }
 }
 

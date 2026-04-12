@@ -74,6 +74,8 @@ export interface Task {
   readonly recurrenceRule?: RecurrenceRule;
   /** Groups recurring task instances into a series. */
   readonly recurrenceGroupId?: string;
+  /** Optional project/group label for categorization. */
+  readonly group?: string;
   readonly schemaVersion: 2;
 }
 
@@ -91,6 +93,7 @@ export interface CreateTaskInput {
   readonly color?: string;
   readonly recurrenceRule?: RecurrenceRule;
   readonly recurrenceGroupId?: string;
+  readonly group?: string;
 }
 
 /**
@@ -152,6 +155,7 @@ export function createTask(input: CreateTaskInput): Result<Task, AppError> {
     ...(input.color !== undefined && TASK_COLORS.includes(input.color as TaskColor) ? { color: input.color as TaskColor } : {}),
     ...(input.recurrenceRule !== undefined ? { recurrenceRule: input.recurrenceRule } : {}),
     ...(input.recurrenceGroupId !== undefined ? { recurrenceGroupId: input.recurrenceGroupId } : {}),
+    ...(input.group !== undefined ? { group: input.group } : {}),
   };
 
   return ok(task);

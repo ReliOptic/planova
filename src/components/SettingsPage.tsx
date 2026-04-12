@@ -3,7 +3,10 @@ import { getWorkHours, saveWorkHours } from '@/src/utils/settings';
 import { SettingsBackupSection } from './settings-backup-section';
 import { SettingsAiSection } from './settings-ai-section';
 import { SettingsDiagnosticsSection } from './settings-diagnostics-section';
-import { aiCredentialRepository, logger } from '../app/dependencies';
+import { aiCredentialRepository, logger, taskRepository, scheduleBlockRepository } from '../app/dependencies';
+import { generateICS } from '../utils/ics-export';
+import { composeViewModels } from '../services/task-view-model';
+import type { ScheduleBlock } from '../domain/schedule-block';
 import { isTauriEnvironment } from '../infrastructure/tauri/backup-io';
 import { SettingsCalendarSection } from './settings-calendar-section';
 
@@ -148,6 +151,49 @@ export const SettingsPage: React.FC = () => {
 
       <hr className="border-surface-container-highest mb-8" />
 
+      {/* Calendar Export */}
+      <section className="mb-8">
+        <h3 className="text-sm font-bold text-on-surface mb-4 uppercase tracking-wide">캘린더 내보내기</h3>
+        <p className="text-xs text-on-surface-variant mb-4">스케줄된 작업을 .ics 파일로 내보내서 Google Calendar에 가져올 수 있습니다.</p>
+        <button
+          onClick={async () => {
+            try {
+              const tasksResult = await taskRepository.list();
+              if (!tasksResult.ok) { handleBackupMessage('작업 목록 조회 실패', true); return; }
+              const blocksResult = await scheduleBlockRepository.listForRange('2000-01-01', '2099-12-31');
+              if (!blocksResult.ok) { handleBackupMessage('일정 조회 실패', true); return; }
+              const viewModels = composeViewModels(tasksResult.value, blocksResult.value as unknown as readonly ScheduleBlock[]);
+              const ics = generateICS(viewModels);
+              if (!ics) { handleBackupMessage('내보낼 스케줄된 작업이 없습니다.', true); return; }
+
+              if (isTauriEnvironment()) {
+                const { save } = await import('@tauri-apps/plugin-dialog');
+                const { writeTextFile } = await import('@tauri-apps/plugin-fs');
+                const path = await save({ defaultPath: 'planova-schedule.ics', filters: [{ name: 'iCalendar', extensions: ['ics'] }] });
+                if (path) {
+                  await writeTextFile(path, ics);
+                  handleBackupMessage('캘린더 파일이 저장되었습니다.', false);
+                }
+              } else {
+                const blob = new Blob([ics], { type: 'text/calendar' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'planova-schedule.ics'; a.click();
+                URL.revokeObjectURL(url);
+                handleBackupMessage('캘린더 파일이 다운로드되었습니다.', false);
+              }
+            } catch {
+              handleBackupMessage('내보내기 실패', true);
+            }
+          }}
+          className="px-6 py-2.5 bg-surface-container border border-outline-variant/30 text-on-surface text-sm font-bold rounded-lg hover:bg-surface-container-high active:scale-95 transition-all"
+        >
+          .ics 파일 내보내기
+        </button>
+      </section>
+
+      <hr className="border-surface-container-highest mb-8" />
+
       {/* Calendar OAuth */}
       <SettingsCalendarSection onMessage={handleBackupMessage} />
 
@@ -157,6 +203,41 @@ export const SettingsPage: React.FC = () => {
       {isTauriEnvironment() && <SettingsUpdateSection onMessage={handleBackupMessage} />}
 
       {isTauriEnvironment() && <hr className="border-surface-container-highest mb-8" />}
+
+      {/* Data Reset */}
+      <section className="mb-8">
+        <h3 className="text-sm font-bold text-on-surface mb-4 uppercase tracking-wide">데이터 관리</h3>
+        <p className="text-xs text-on-surface-variant mb-4">모든 작업과 일정을 삭제하고 초기 상태로 되돌립니다.</p>
+        <button
+          onClick={async () => {
+            if (!window.confirm('정말 모든 작업과 일정을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) return;
+            if (!window.confirm('한 번 더 확인합니다. 모든 데이터가 영구 삭제됩니다.')) return;
+            try {
+              const tasksResult = await taskRepository.list();
+              if (tasksResult.ok) {
+                for (const t of tasksResult.value) {
+                  await taskRepository.delete(t.id);
+                }
+              }
+              const today = new Date().toISOString().slice(0, 10);
+              const blocksResult = await scheduleBlockRepository.listForRange('2000-01-01', '2099-12-31');
+              if (blocksResult.ok) {
+                for (const b of blocksResult.value) {
+                  await scheduleBlockRepository.delete(b.id);
+                }
+              }
+              handleBackupMessage('모든 데이터가 초기화되었습니다.', false);
+            } catch {
+              handleBackupMessage('초기화 실패', true);
+            }
+          }}
+          className="px-6 py-2.5 bg-red-500 text-white text-sm font-bold rounded-lg hover:bg-red-600 active:scale-95 transition-all"
+        >
+          모든 작업 초기화
+        </button>
+      </section>
+
+      <hr className="border-surface-container-highest mb-8" />
 
       {/* Diagnostics */}
       <SettingsDiagnosticsSection logger={logger} />

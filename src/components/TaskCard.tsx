@@ -69,12 +69,17 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete }) =>
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 mb-2">
+      <div className="flex items-center gap-1.5 mb-1">
         <h3 className="font-semibold text-on-surface font-headline">{task.title}</h3>
         {task.recurrenceRule && (
           <Repeat size={13} className="text-primary shrink-0" title="반복 작업" />
         )}
       </div>
+      {task.group && (
+        <span className="inline-block text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary mb-1.5">
+          {task.group}
+        </span>
+      )}
       
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-on-surface-variant text-xs">
