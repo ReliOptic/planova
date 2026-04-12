@@ -84,6 +84,17 @@ export class PlanovaDatabase extends Dexie {
       aiCache: 'key, createdAt',
       logs: '++id, ts, level',
     });
+
+    // v7 — adds completedAt index for Daily Pulse queries.
+    // actualDurationMinutes field added to Task (no index needed).
+    this.version(7).stores({
+      tasks: 'id, status, createdAt, recurrenceGroupId, group, completedAt',
+      scheduleBlocks: 'id, taskId, scheduledDate',
+      meta: 'key',
+      aiCredentials: 'provider',
+      aiCache: 'key, createdAt',
+      logs: '++id, ts, level',
+    });
   }
 }
 

@@ -29,7 +29,33 @@ export interface TaskViewModel extends Task {
    * Derived from endTime − startTime. Absent when no block is joined.
    */
   readonly blockDurationMinutes?: number;
+  /**
+   * Deviation in minutes between actual and planned duration.
+   * Positive = took longer, negative = finished early.
+   * Available for completed tasks (from actualDurationMinutes) or
+   * active tasks (from blockDurationMinutes).
+   */
+  readonly deviationMinutes?: number;
 }
+
+/** Deviation severity tier for color-coding. */
+export type DeviationTier = 'exact' | 'over-mild' | 'over-heavy' | 'under';
+
+/** Compute the deviation tier from a deviation value in minutes. */
+export function getDeviationTier(deviationMinutes: number): DeviationTier {
+  if (deviationMinutes <= -1) return 'under';
+  if (deviationMinutes <= 5) return 'exact';
+  if (deviationMinutes <= 30) return 'over-mild';
+  return 'over-heavy';
+}
+
+/** Tailwind classes for each deviation tier. */
+export const DEVIATION_STYLES: Record<DeviationTier, { bg: string; text: string; badge: string }> = {
+  exact:       { bg: 'bg-green-500/10', text: 'text-green-700', badge: 'bg-green-100 text-green-700' },
+  'over-mild': { bg: 'bg-amber-500/10', text: 'text-amber-700', badge: 'bg-amber-100 text-amber-700' },
+  'over-heavy': { bg: 'bg-red-500/10',  text: 'text-red-700',  badge: 'bg-red-100 text-red-700' },
+  under:       { bg: 'bg-blue-500/10', text: 'text-blue-700', badge: 'bg-blue-100 text-blue-700' },
+};
 
 /**
  * composeViewModels — joins Tasks with their associated ScheduleBlock.
@@ -58,15 +84,29 @@ export function composeViewModels(
   return tasks.map((task): TaskViewModel => {
     const block = blockByTaskId.get(task.id);
     if (block === undefined) {
+      // Completed tasks: compute deviation from stored actualDurationMinutes
+      // and restore schedule position from preserved fields
+      const deviationMinutes = task.actualDurationMinutes !== undefined
+        ? task.actualDurationMinutes - task.durationMinutes
+        : undefined;
       return {
         ...task,
         duration: task.durationMinutes,
+        ...(deviationMinutes !== undefined ? { deviationMinutes } : {}),
+        // Restore schedule position for completed tasks so they render on the timeline
+        ...(task.completedScheduledDate !== undefined ? { scheduledDate: task.completedScheduledDate } : {}),
+        ...(task.completedStartTime !== undefined ? { startTime: task.completedStartTime } : {}),
+        ...(task.completedStartTime !== undefined && task.actualDurationMinutes !== undefined ? {
+          endTime: new Date(Date.parse(task.completedStartTime) + task.actualDurationMinutes * 60_000).toISOString(),
+          blockDurationMinutes: task.actualDurationMinutes,
+        } : {}),
       };
     }
     const blockDurationMinutes = Math.max(
       0,
       Math.round((Date.parse(block.endTime) - Date.parse(block.startTime)) / 60_000),
     );
+    const deviationMinutes = blockDurationMinutes - task.durationMinutes;
     return {
       ...task,
       duration: task.durationMinutes,
@@ -75,6 +115,7 @@ export function composeViewModels(
       endTime: block.endTime,
       scheduleBlockId: block.id,
       blockDurationMinutes,
+      deviationMinutes,
     };
   });
 }

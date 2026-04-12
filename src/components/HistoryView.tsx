@@ -3,7 +3,9 @@ import { History } from 'lucide-react';
 import { liveQuery } from 'dexie';
 import { db } from '../infrastructure/persistence/db';
 import type { Task } from '../domain/task';
-import { formatDuration } from '../utils/date-utils';
+import { formatDuration, getLocalToday } from '../utils/date-utils';
+import { WeeklyTrendChart } from './WeeklyTrendChart';
+import { useWeeklyTrend } from '../hooks/use-weekly-trend';
 
 const PRIORITY_BADGE: Record<Task['priority'], string> = {
   High: 'bg-tertiary-container text-white',
@@ -19,9 +21,17 @@ function formatCompletedAt(ms: number): string {
   });
 }
 
+/** Minimum days with data required to show the trend chart. */
+const MIN_DAYS_WITH_DATA = 3;
+
 /** HistoryView — displays all completed tasks ordered by completion time. */
 export const HistoryView: React.FC = () => {
   const [tasks, setTasks] = useState<readonly Task[]>([]);
+  const today = getLocalToday();
+  const { data: trendData } = useWeeklyTrend(today);
+
+  const daysWithData = trendData?.days.filter((d) => d.accuracy !== null).length ?? 0;
+  const showTrend = daysWithData >= MIN_DAYS_WITH_DATA;
 
   useEffect(() => {
     const subscription = liveQuery(() =>
@@ -55,6 +65,15 @@ export const HistoryView: React.FC = () => {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
+      {showTrend && trendData !== null && (
+        <div className="mb-6">
+          <WeeklyTrendChart
+            data={trendData.days}
+            todayDate={today}
+            weekAverage={trendData.weekAverage}
+          />
+        </div>
+      )}
       <h2 className="text-lg font-bold font-headline text-on-surface mb-4">
         {tasks.length} Completed {tasks.length === 1 ? 'Task' : 'Tasks'}
       </h2>

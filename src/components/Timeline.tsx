@@ -18,6 +18,8 @@ import { WeekView } from './WeekView';
 import { MonthView } from './MonthView';
 import { TimelineHeader } from './timeline-header';
 import type { ViewMode } from './timeline-header';
+import { GhostBlock } from './GhostBlock';
+import { useGhosts } from '../hooks/use-ghosts';
 
 /** Props for Timeline. */
 export interface TimelineProps {
@@ -49,6 +51,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     return () => clearInterval(interval);
   }, [isToday, workHours.start]);
 
+  const { ghosts, materialize } = useGhosts(selectedDate);
   const currentHour = new Date().getHours();
   const slots: Array<{ hour: number; minute: number; label: string; isHourStart: boolean }> = [];
   for (let h = workHours.start; h < workHours.end; h++) {
@@ -63,7 +66,15 @@ export const Timeline: React.FC<TimelineProps> = ({
     (t) => t.scheduledDate === selectedDate && t.startTime && t.endTime &&
       (t.status === 'Scheduled' || t.status === 'In Progress'),
   );
-  const columns = computeColumns(scheduledTasks);
+  // Show today's completed tasks that have deviation data
+  const completedTodayTasks = tasks.filter(
+    (t) => t.status === 'Completed' &&
+      t.scheduledDate === selectedDate &&
+      t.startTime && t.endTime &&
+      t.deviationMinutes !== undefined,
+  );
+  const allTimelineTasks = [...scheduledTasks, ...completedTodayTasks];
+  const columns = computeColumns(allTimelineTasks);
   const totalHeight = (workHours.end - workHours.start) * SLOT_HEIGHT_PX;
 
   return (
@@ -91,7 +102,16 @@ export const Timeline: React.FC<TimelineProps> = ({
               <div className="flex-1 h-[2px] bg-tertiary opacity-60" />
             </div>
           )}
-          {scheduledTasks.map((task) => {
+          {ghosts.map((ghost) => (
+            <GhostBlock
+              key={ghost.id}
+              ghost={ghost}
+              workStartHour={workHours.start}
+              selectedDate={selectedDate}
+              onMaterialize={materialize}
+            />
+          ))}
+          {allTimelineTasks.map((task) => {
             const colInfo = columns.get(task.id) ?? { column: 0, totalColumns: 1 };
             return (
               <DraggableScheduledTask
@@ -123,7 +143,7 @@ export const Timeline: React.FC<TimelineProps> = ({
               />
             ))}
           </div>
-          {scheduledTasks.length === 0 && (
+          {allTimelineTasks.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center text-on-surface-variant/40">
                 <p className="text-sm font-medium">No tasks scheduled</p>

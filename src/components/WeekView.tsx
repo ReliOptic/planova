@@ -174,7 +174,8 @@ export const WeekView: React.FC<WeekViewProps> = ({
                 date={date}
                 tasks={tasks.filter((t) =>
                   t.scheduledDate === date && t.startTime && t.endTime &&
-                  (t.status === 'Scheduled' || t.status === 'In Progress')
+                  (t.status === 'Scheduled' || t.status === 'In Progress' ||
+                    (t.status === 'Completed' && t.deviationMinutes !== undefined))
                 )}
                 slots={slots}
                 onEditTask={onEditTask}

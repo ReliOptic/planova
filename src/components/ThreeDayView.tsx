@@ -49,7 +49,8 @@ export const ThreeDayView: React.FC<ThreeDayViewProps> = ({
         t.scheduledDate === date &&
         t.startTime &&
         t.endTime &&
-        (t.status === 'Scheduled' || t.status === 'In Progress')
+        (t.status === 'Scheduled' || t.status === 'In Progress' ||
+          (t.status === 'Completed' && t.deviationMinutes !== undefined))
     );
 
   return (

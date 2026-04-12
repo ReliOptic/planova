@@ -3,10 +3,11 @@ import { GripVertical, Check, Trash2, Repeat } from 'lucide-react';
 import { Task } from '@/src/types';
 import { useDraggable } from '@dnd-kit/core';
 import { cn } from '@/src/lib/utils';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { formatTimeDisplay, isPastTime } from '@/src/utils/date-utils';
 import { buildBlockStyle, startResize } from './timeline-block-utils';
 import { TASK_COLOR_MAP, type TaskColor } from '@/src/domain/task';
+import { getDeviationTier, DEVIATION_STYLES } from '@/src/services/task-view-model';
 
 /** Props for DraggableScheduledTask. */
 export interface DraggableScheduledTaskProps {
@@ -46,21 +47,30 @@ export const DraggableScheduledTask: React.FC<DraggableScheduledTaskProps> = ({
     data: task,
   });
 
+  const isCompleted = task.status === 'Completed';
   const isOverdue =
     task.status === 'Scheduled' && task.endTime !== undefined && isPastTime(task.endTime);
 
   const style = buildBlockStyle(topPx, heightPx, column, totalColumns, transform, isDragging, isResizing);
 
+  // Deviation data for completed tasks
+  const deviationMinutes = (task as { deviationMinutes?: number }).deviationMinutes;
+  const hasDeviation = isCompleted && deviationMinutes !== undefined;
+  const deviationTier = hasDeviation ? getDeviationTier(deviationMinutes) : undefined;
+  const deviationStyle = deviationTier ? DEVIATION_STYLES[deviationTier] : undefined;
+
   // Use task color if set, otherwise fall back to status-based colors
   const taskColor = (task as { color?: TaskColor }).color;
   const colorStyle = taskColor && TASK_COLOR_MAP[taskColor];
-  const statusColors = colorStyle
-    ? `${colorStyle.bg} border-transparent ${colorStyle.text}`
-    : isOverdue
-      ? 'bg-tertiary-container/10 border-tertiary'
-      : task.status === 'In Progress'
-        ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10'
-        : 'bg-secondary-container/30 border-on-secondary-container';
+  const statusColors = isCompleted
+    ? `${deviationStyle?.bg ?? 'bg-surface-container'} border-transparent`
+    : colorStyle
+      ? `${colorStyle.bg} border-transparent ${colorStyle.text}`
+      : isOverdue
+        ? 'bg-tertiary-container/10 border-tertiary'
+        : task.status === 'In Progress'
+          ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10'
+          : 'bg-secondary-container/30 border-on-secondary-container';
 
   const handleComplete = async (e: React.MouseEvent): Promise<void> => {
     e.stopPropagation();
@@ -73,53 +83,102 @@ export const DraggableScheduledTask: React.FC<DraggableScheduledTaskProps> = ({
 
   return (
     <div
-      ref={setNodeRef}
+      ref={isCompleted ? undefined : setNodeRef}
       style={style}
-      {...attributes}
-      onDoubleClick={onEdit}
+      {...(isCompleted ? {} : attributes)}
+      onDoubleClick={isCompleted ? undefined : onEdit}
       className={cn(
         'absolute p-3 group rounded-lg border-l-4 transition-all overflow-hidden',
         statusColors,
         isDragging && 'shadow-2xl ring-2 ring-primary/30',
+        isCompleted && 'opacity-80',
       )}
     >
-      <div
-        onMouseDown={(e) => startResize(e, 'top', task.id, onResize, setIsResizing)}
-        onTouchStart={(e) => startResize(e, 'top', task.id, onResize, setIsResizing)}
-        className="absolute top-0 left-0 right-0 h-2 cursor-n-resize opacity-0 group-hover:opacity-100 hover:bg-primary/10 transition-opacity z-20"
-        aria-label="블록 크기 조절"
-      />
-      <div className="flex justify-between items-start">
+      {/* Completed hatching overlay */}
+      {isCompleted && (
+        <div
+          className="absolute inset-0 pointer-events-none z-0"
+          style={{
+            backgroundImage: 'repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(0,0,0,0.04) 4px, rgba(0,0,0,0.04) 6px)',
+          }}
+        />
+      )}
+      {!isCompleted && (
+        <div
+          onMouseDown={(e) => startResize(e, 'top', task.id, onResize, setIsResizing)}
+          onTouchStart={(e) => startResize(e, 'top', task.id, onResize, setIsResizing)}
+          className="absolute top-0 left-0 right-0 h-2 cursor-n-resize opacity-0 group-hover:opacity-100 hover:bg-primary/10 transition-opacity z-20"
+          aria-label="블록 크기 조절"
+        />
+      )}
+      <div className="flex justify-between items-start relative z-10">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div
-            {...listeners}
-            className="p-1 hover:bg-surface-container rounded cursor-grab active:cursor-grabbing shrink-0 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
-            aria-label="드래그하여 이동"
-          >
-            <GripVertical className="text-outline-variant group-hover:text-primary transition-colors" size={14} />
-          </div>
+          {isCompleted ? (
+            <div className="p-1 shrink-0">
+              <Check className="text-green-600" size={14} />
+            </div>
+          ) : (
+            <div
+              {...listeners}
+              className="p-1 hover:bg-surface-container rounded cursor-grab active:cursor-grabbing shrink-0 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+              aria-label="드래그하여 이동"
+            >
+              <GripVertical className="text-outline-variant group-hover:text-primary transition-colors" size={14} />
+            </div>
+          )}
           <h4
             className={cn(
               'text-sm font-bold font-headline truncate flex items-center gap-1',
-              isOverdue ? 'text-tertiary'
+              isCompleted ? (deviationStyle?.text ?? 'text-on-surface-variant')
+                : isOverdue ? 'text-tertiary'
                 : task.status === 'In Progress' ? 'text-primary'
                 : 'text-on-secondary-container',
             )}
           >
-            {task.title}
+            {isCompleted && <span className="line-through decoration-1">{task.title}</span>}
+            {!isCompleted && task.title}
             {task.recurrenceRule && <Repeat size={12} className="shrink-0 opacity-70" title="반복 작업" />}
           </h4>
         </div>
-        <TaskBlockActions
-          task={task}
-          isOverdue={isOverdue}
-          isCompleting={isCompleting}
-          onComplete={handleComplete}
-          onStart={handleStart}
-          onDelete={onDelete}
-        />
+        {isCompleted ? (
+          /* Deviation badge */
+          hasDeviation && (
+            <motion.span
+              initial={{ opacity: 0, scale: 0.8, y: 4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25, delay: 0.1 }}
+              className={cn(
+                'text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0',
+                deviationStyle?.badge,
+              )}
+            >
+              {deviationMinutes > 0 ? `+${deviationMinutes}분` : deviationMinutes === 0 ? '정확' : `${deviationMinutes}분`}
+              {deviationMinutes > 0 ? ' ▲' : deviationMinutes < 0 ? ' ▼' : ' ✓'}
+            </motion.span>
+          )
+        ) : (
+          <TaskBlockActions
+            task={task}
+            isOverdue={isOverdue}
+            isCompleting={isCompleting}
+            onComplete={handleComplete}
+            onStart={handleStart}
+            onDelete={onDelete}
+          />
+        )}
       </div>
-      {task.description && heightPx > 48 && (
+      {/* Plan vs actual summary for completed blocks with enough height */}
+      {isCompleted && hasDeviation && heightPx > 48 && (
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className={cn('text-[10px] mt-1 ml-8 relative z-10', deviationStyle?.text)}
+        >
+          계획 {task.duration}분 → 실제 {(task as { actualDurationMinutes?: number }).actualDurationMinutes}분
+        </motion.p>
+      )}
+      {!isCompleted && task.description && heightPx > 48 && (
         <p className={cn(
           'text-[11px] mt-1 ml-8 truncate',
           task.status === 'In Progress' ? 'text-primary/80' : 'text-on-secondary-container/80',
@@ -127,12 +186,14 @@ export const DraggableScheduledTask: React.FC<DraggableScheduledTaskProps> = ({
           {task.description}
         </p>
       )}
-      <div
-        onMouseDown={(e) => startResize(e, 'bottom', task.id, onResize, setIsResizing)}
-        onTouchStart={(e) => startResize(e, 'bottom', task.id, onResize, setIsResizing)}
-        className="absolute bottom-0 left-0 right-0 h-2 cursor-s-resize opacity-0 group-hover:opacity-100 hover:bg-primary/10 transition-opacity z-20"
-        aria-label="블록 크기 조절"
-      />
+      {!isCompleted && (
+        <div
+          onMouseDown={(e) => startResize(e, 'bottom', task.id, onResize, setIsResizing)}
+          onTouchStart={(e) => startResize(e, 'bottom', task.id, onResize, setIsResizing)}
+          className="absolute bottom-0 left-0 right-0 h-2 cursor-s-resize opacity-0 group-hover:opacity-100 hover:bg-primary/10 transition-opacity z-20"
+          aria-label="블록 크기 조절"
+        />
+      )}
     </div>
   );
 };

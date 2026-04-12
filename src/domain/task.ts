@@ -76,6 +76,12 @@ export interface Task {
   readonly recurrenceGroupId?: string;
   /** Optional project/group label for categorization. */
   readonly group?: string;
+  /** Actual duration in minutes, recorded at completion time from ScheduleBlock. */
+  readonly actualDurationMinutes?: number;
+  /** Scheduled date preserved at completion (YYYY-MM-DD), since ScheduleBlock is deleted. */
+  readonly completedScheduledDate?: string;
+  /** Start time preserved at completion (ISO 8601 UTC), since ScheduleBlock is deleted. */
+  readonly completedStartTime?: string;
   readonly schemaVersion: 2;
 }
 
@@ -94,6 +100,9 @@ export interface CreateTaskInput {
   readonly recurrenceRule?: RecurrenceRule;
   readonly recurrenceGroupId?: string;
   readonly group?: string;
+  readonly actualDurationMinutes?: number;
+  readonly completedScheduledDate?: string;
+  readonly completedStartTime?: string;
 }
 
 /**
@@ -156,6 +165,9 @@ export function createTask(input: CreateTaskInput): Result<Task, AppError> {
     ...(input.recurrenceRule !== undefined ? { recurrenceRule: input.recurrenceRule } : {}),
     ...(input.recurrenceGroupId !== undefined ? { recurrenceGroupId: input.recurrenceGroupId } : {}),
     ...(input.group !== undefined ? { group: input.group } : {}),
+    ...(input.actualDurationMinutes !== undefined ? { actualDurationMinutes: input.actualDurationMinutes } : {}),
+    ...(input.completedScheduledDate !== undefined ? { completedScheduledDate: input.completedScheduledDate } : {}),
+    ...(input.completedStartTime !== undefined ? { completedStartTime: input.completedStartTime } : {}),
   };
 
   return ok(task);

@@ -23,15 +23,32 @@ export async function deleteBlocksForTask(taskId: string): Promise<void> {
 }
 
 /**
- * handleCompleteTask — marks a task Completed and removes its schedule blocks.
+ * handleCompleteTask — marks a task Completed, records actual duration, and removes its schedule blocks.
  */
 export async function handleCompleteTask(
   taskId: string,
   showToast: (msg: string, type?: 'error' | 'success') => void,
 ): Promise<void> {
+  // Capture actual duration and schedule info from ScheduleBlock before deletion
+  let actualDurationMinutes: number | undefined;
+  let completedScheduledDate: string | undefined;
+  let completedStartTime: string | undefined;
+  const blocksResult = await scheduleBlockRepository.getByTaskId(taskId);
+  if (blocksResult.ok && blocksResult.value.length > 0) {
+    const block = blocksResult.value[0];
+    const startMs = Date.parse(block.startTime);
+    const endMs = Date.now(); // Use current time as actual end
+    actualDurationMinutes = Math.max(1, Math.round((endMs - startMs) / 60_000));
+    completedScheduledDate = block.scheduledDate;
+    completedStartTime = block.startTime;
+  }
+
   const result = await taskRepository.update(taskId, {
     status: 'Completed',
     completedAt: Date.now(),
+    ...(actualDurationMinutes !== undefined ? { actualDurationMinutes } : {}),
+    ...(completedScheduledDate !== undefined ? { completedScheduledDate } : {}),
+    ...(completedStartTime !== undefined ? { completedStartTime } : {}),
   });
   if (!result.ok) {
     logError('task-action/complete', result.error);

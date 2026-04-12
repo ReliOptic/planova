@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Plus } from 'lucide-react';
 import { liveQuery } from 'dexie';
 import { Toast } from './components/Toast';
@@ -77,6 +77,7 @@ const PendingDroppable: React.FC<{
 };
 
 export default function App() {
+  const quickAddRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -163,9 +164,9 @@ export default function App() {
       }
       const tag = document.activeElement?.tagName?.toLowerCase();
       if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
-      if (e.key === 'n' && !isModalOpen) {
+      if (e.key === 'n') {
         e.preventDefault();
-        setIsModalOpen(true);
+        quickAddRef.current?.focus();
       }
     };
     document.addEventListener('keydown', handleKeyDown);
@@ -220,7 +221,10 @@ export default function App() {
           pendingCount={pendingTasks.length}
           completedCount={completedCount}
         />
-        <TopBar />
+        <TopBar
+          onOpenModal={() => { setEditingTask(null); setIsModalOpen(true); }}
+          quickAddRef={quickAddRef}
+        />
 
         <main id="main-content" role="main" aria-label="Dashboard content" className="pl-64 pt-16 min-h-screen">
           <AnimatePresence mode="wait">
