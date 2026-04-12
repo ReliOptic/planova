@@ -16,6 +16,9 @@ export interface ITaskRepository {
   /** Return tasks filtered by a given status. */
   listByStatus(status: TaskStatus): Promise<Result<readonly Task[], AppError>>;
 
+  /** Return all tasks sharing a recurrenceGroupId (recurring series). */
+  listByGroupId(groupId: string): Promise<Result<readonly Task[], AppError>>;
+
   /**
    * Fetch a single task by id.
    * Returns err('repo/not-found') when no document exists.

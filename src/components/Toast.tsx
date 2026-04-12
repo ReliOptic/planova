@@ -29,8 +29,8 @@ export function Toast({ message, type, onDismiss }: ToastProps): React.ReactElem
         <span className="flex-1">{message}</span>
         <button
           onClick={onDismiss}
-          aria-label="Dismiss notification"
-          className="shrink-0 opacity-80 hover:opacity-100 transition-opacity text-white"
+          aria-label="알림 닫기"
+          className="shrink-0 opacity-80 hover:opacity-100 transition-opacity text-white rounded focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
         >
           ✕
         </button>

@@ -37,6 +37,17 @@ export class DexieTaskRepository implements ITaskRepository {
     }
   }
 
+  /** Return all tasks sharing a recurrenceGroupId. */
+  async listByGroupId(groupId: string): Promise<Result<readonly Task[], AppError>> {
+    try {
+      const tasks = await this._db.tasks.where('recurrenceGroupId').equals(groupId).toArray();
+      return ok(tasks);
+    } catch (cause) {
+      console.log(JSON.stringify({ level: 'error', op: 'task.listByGroupId', groupId, cause: String(cause) }));
+      return err({ kind: 'repo/write-failed', cause: String(cause) });
+    }
+  }
+
   /** Fetch a single task by id. Returns err('repo/not-found') when absent. */
   async get(id: string): Promise<Result<Task, AppError>> {
     try {

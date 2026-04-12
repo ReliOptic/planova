@@ -85,6 +85,30 @@ describe('DexieTaskRepository', () => {
     });
   });
 
+  describe('listByGroupId', () => {
+    it('returns only tasks with the requested recurrenceGroupId', async () => {
+      const groupId = 'series-abc';
+      await repo.create(makeTask({ id: 'r1', recurrenceGroupId: groupId, due: '2026-04-12' }));
+      await repo.create(makeTask({ id: 'r2', recurrenceGroupId: groupId, due: '2026-04-19' }));
+      await repo.create(makeTask({ id: 'r3', recurrenceGroupId: groupId, due: '2026-04-26' }));
+      await repo.create(makeTask({ id: 'standalone' }));
+
+      const result = await repo.listByGroupId(groupId);
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toHaveLength(3);
+        expect(result.value.every((t) => t.recurrenceGroupId === groupId)).toBe(true);
+      }
+    });
+
+    it('returns empty array for unknown groupId', async () => {
+      await repo.create(makeTask({ id: 'r1', recurrenceGroupId: 'existing' }));
+      const result = await repo.listByGroupId('nonexistent');
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value).toHaveLength(0);
+    });
+  });
+
   describe('update', () => {
     it('applies patch to an existing task', async () => {
       await repo.create(makeTask());

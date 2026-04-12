@@ -6,7 +6,7 @@ export const TopBar: React.FC = () => {
   const isOnline = useOnlineStatus();
 
   return (
-    <header className="fixed top-0 w-full z-40 bg-white/80 backdrop-blur-xl flex justify-between items-center px-8 h-16 pl-72">
+    <header role="banner" className="fixed top-0 w-full z-40 bg-white/80 backdrop-blur-xl flex justify-between items-center px-8 h-16 pl-72">
       <div className="flex-1" />
       {!isOnline && (
         <div className="flex items-center gap-1.5 text-xs text-gray-500 mr-2">

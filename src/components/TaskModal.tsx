@@ -205,7 +205,7 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
                         type="button"
                         onClick={() => setColor(isSelected ? undefined : c)}
                         aria-label={c}
-                        className={`w-7 h-7 rounded-full transition-all ${styles.bg} ${isSelected ? `ring-2 ${styles.ring} ring-offset-2 scale-110` : 'hover:scale-110 opacity-70 hover:opacity-100'}`}
+                        className={`w-7 h-7 rounded-full transition-all focus-visible:outline-none ${styles.bg} ${isSelected ? `ring-2 ${styles.ring} ring-offset-2 scale-110` : 'hover:scale-110 opacity-70 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2'}`}
                       />
                     );
                   })}
@@ -217,7 +217,7 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
                   <button
                     type="button"
                     onClick={() => setRecurrenceEnabled(!recurrenceEnabled)}
-                    className="inline-flex items-center gap-1.5 hover:text-primary transition-colors"
+                    className="inline-flex items-center gap-1.5 hover:text-primary transition-colors rounded focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                   >
                     <Repeat size={14} className={recurrenceEnabled ? 'text-primary' : ''} />
                     반복 일정
@@ -273,7 +273,7 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
                                       : [...recurrenceDays, idx].sort((a, b) => a - b),
                                   )
                                 }
-                                className={`w-8 h-8 rounded-full text-xs font-medium transition-all ${
+                                className={`w-8 h-8 rounded-full text-xs font-medium transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
                                   isSelected
                                     ? 'bg-primary text-white shadow-sm'
                                     : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'

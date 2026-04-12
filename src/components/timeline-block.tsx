@@ -87,12 +87,14 @@ export const DraggableScheduledTask: React.FC<DraggableScheduledTaskProps> = ({
         onMouseDown={(e) => startResize(e, 'top', task.id, onResize, setIsResizing)}
         onTouchStart={(e) => startResize(e, 'top', task.id, onResize, setIsResizing)}
         className="absolute top-0 left-0 right-0 h-2 cursor-n-resize opacity-0 group-hover:opacity-100 hover:bg-primary/10 transition-opacity z-20"
+        aria-label="블록 크기 조절"
       />
       <div className="flex justify-between items-start">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <div
             {...listeners}
-            className="p-1 hover:bg-surface-container rounded cursor-grab active:cursor-grabbing shrink-0"
+            className="p-1 hover:bg-surface-container rounded cursor-grab active:cursor-grabbing shrink-0 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+            aria-label="드래그하여 이동"
           >
             <GripVertical className="text-outline-variant group-hover:text-primary transition-colors" size={14} />
           </div>
@@ -129,6 +131,7 @@ export const DraggableScheduledTask: React.FC<DraggableScheduledTaskProps> = ({
         onMouseDown={(e) => startResize(e, 'bottom', task.id, onResize, setIsResizing)}
         onTouchStart={(e) => startResize(e, 'bottom', task.id, onResize, setIsResizing)}
         className="absolute bottom-0 left-0 right-0 h-2 cursor-s-resize opacity-0 group-hover:opacity-100 hover:bg-primary/10 transition-opacity z-20"
+        aria-label="블록 크기 조절"
       />
     </div>
   );
@@ -168,8 +171,9 @@ const TaskBlockActions: React.FC<TaskBlockActionsProps> = ({
     {task.status === 'Scheduled' && !isOverdue && (
       <button
         onClick={onStart}
-        className="p-1 bg-primary/10 rounded-full text-primary hover:bg-primary/20 transition-all opacity-0 group-hover:opacity-100"
+        className="p-1 bg-primary/10 rounded-full text-primary hover:bg-primary/20 transition-all opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
         title="Start task"
+        aria-label="작업 시작"
       >
         <Check size={12} />
       </button>
@@ -181,20 +185,22 @@ const TaskBlockActions: React.FC<TaskBlockActionsProps> = ({
         animate={isCompleting ? { scale: [1, 1.3, 1] } : {}}
         transition={{ duration: 0.3, type: 'spring' }}
         className={cn(
-          'p-1 rounded-full transition-all',
+          'p-1 rounded-full transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none',
           isCompleting
             ? 'bg-green-500 text-white'
-            : 'bg-white/80 text-primary hover:bg-primary hover:text-white shadow-sm opacity-0 group-hover:opacity-100',
+            : 'bg-white/80 text-primary hover:bg-primary hover:text-white shadow-sm opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
         )}
         title="Mark complete"
+        aria-label="작업 완료"
       >
         <Check size={12} />
       </motion.button>
     )}
     <button
       onClick={(e) => { e.stopPropagation(); onDelete(); }}
-      className="p-1 text-on-surface-variant hover:text-tertiary transition-colors opacity-0 group-hover:opacity-100"
+      className="p-1 rounded text-on-surface-variant hover:text-tertiary transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
       title="Delete task"
+      aria-label="작업 삭제"
     >
       <Trash2 size={12} />
     </button>

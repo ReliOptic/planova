@@ -26,7 +26,7 @@ export const RecommendationsPanel: React.FC<RecommendationsPanelProps> = ({
   if (loading) return null;
 
   return (
-    <section className="mb-4">
+    <section className="mb-4" role="complementary" aria-label="AI 추천">
       <div className="flex items-center gap-1.5 px-2 mb-2">
         <Sparkles size={12} className="text-primary" />
         <span className="text-[10px] font-bold text-slate-400 tracking-[0.1em] uppercase">추천</span>

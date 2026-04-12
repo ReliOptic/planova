@@ -24,7 +24,9 @@ import { composeViewModels } from './services/task-view-model';
 import type { TaskViewModel } from './services/task-view-model';
 import type { Task as DomainTask } from './domain/task';
 import type { ScheduleBlock } from './domain/schedule-block';
-import { useTaskActions } from './hooks/useTaskActions';
+import { useTaskActions, type RecurrenceDialogState } from './hooks/useTaskActions';
+import { RecurrenceActionDialog } from './components/RecurrenceActionDialog';
+import type { RecurrenceChoice } from './hooks/use-task-crud';
 import { migrateCredentialToStronghold } from './infrastructure/tauri/stronghold-credential-repository';
 import { dexieAiCredentialRepository, aiCredentialRepository } from './app/dependencies';
 import { useOverdueNotifications } from './hooks/use-overdue-notifications';
@@ -81,6 +83,7 @@ export default function App() {
   const [tasks, setTasks] = useState<readonly TaskViewModel[]>([]);
   const [isMigrating, setIsMigrating] = useState(true);
   const { toast, showToast, dismissToast } = useToast();
+  const [recurrenceDialog, setRecurrenceDialog] = useState<RecurrenceDialogState | null>(null);
   useOverdueNotifications();
 
   const sensors = useSensors(
@@ -170,7 +173,18 @@ export default function App() {
   }, [isModalOpen]);
 
   const { handleDragEnd, handleCompleteTask, handleStartTask, handleDeleteTask, handleResizeTask, handleSaveTask, handleQuickAdd } =
-    useTaskActions(tasks, showToast, setIsModalOpen, setEditingTask);
+    useTaskActions(tasks, showToast, setIsModalOpen, setEditingTask, setRecurrenceDialog);
+
+  const handleRecurrenceChoice = async (choice: RecurrenceChoice): Promise<void> => {
+    if (!recurrenceDialog) return;
+    const { taskId, action, pendingData } = recurrenceDialog;
+    setRecurrenceDialog(null);
+    if (action === 'delete') {
+      await handleDeleteTask(taskId, choice);
+    } else if (action === 'edit' && pendingData) {
+      await handleSaveTask(pendingData, choice);
+    }
+  };
 
   const handleEditTask = (task: Task): void => {
     setEditingTask(task);
@@ -290,6 +304,12 @@ export default function App() {
           editingTask={editingTask}
         />
         {toast && <Toast message={toast.message} type={toast.type} onDismiss={dismissToast} />}
+        <RecurrenceActionDialog
+          isOpen={recurrenceDialog !== null}
+          action={recurrenceDialog?.action ?? 'delete'}
+          onChoice={handleRecurrenceChoice}
+          onCancel={() => setRecurrenceDialog(null)}
+        />
       </div>
     </DndContext>
   );
