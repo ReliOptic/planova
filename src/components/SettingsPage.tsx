@@ -5,6 +5,7 @@ import { SettingsAiSection } from './settings-ai-section';
 import { SettingsDiagnosticsSection } from './settings-diagnostics-section';
 import { aiCredentialRepository, logger } from '../app/dependencies';
 import { isTauriEnvironment } from '../infrastructure/tauri/backup-io';
+import { SettingsCalendarSection } from './settings-calendar-section';
 
 const SettingsUpdateSection: React.FC<{ onMessage: (text: string, isError: boolean) => void }> = ({ onMessage }) => {
   const [checking, setChecking] = useState(false);
@@ -147,14 +148,8 @@ export const SettingsPage: React.FC = () => {
 
       <hr className="border-surface-container-highest mb-8" />
 
-      {/* Calendar (Phase 3) */}
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <h3 className="text-sm font-bold text-on-surface uppercase tracking-wide">Google Calendar</h3>
-          <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-tight bg-surface-container-highest text-on-surface-variant rounded-full">Coming Soon</span>
-        </div>
-        <p className="text-xs text-on-surface-variant">Connect Google Calendar to sync your schedule.</p>
-      </section>
+      {/* Calendar OAuth */}
+      <SettingsCalendarSection onMessage={handleBackupMessage} />
 
       <hr className="border-surface-container-highest mb-8 mt-8" />
 

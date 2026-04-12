@@ -24,7 +24,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost https://openrouter.ai https://github.com https://api.github.com; font-src 'self' data:; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; object-src 'none'; base-uri 'self'"
+      "csp": "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost https://openrouter.ai https://github.com https://api.github.com https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com https://graph.microsoft.com https://login.microsoftonline.com; font-src 'self' data:; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; object-src 'none'; base-uri 'self'"
     }
   },
   "plugins": {

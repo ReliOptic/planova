@@ -1,5 +1,6 @@
 import type { TaskViewModel } from '../services/task-view-model';
 import { createTask } from '../domain/task';
+import type { Task } from '../domain/task';
 import { taskRepository, scheduleBlockRepository, logger } from '../app/dependencies';
 import { buildUTCTime, getLocalToday } from '../utils/date-utils';
 import { sanitizeText } from '../utils/sanitize';
@@ -104,6 +105,7 @@ async function updateExistingTask(
     due: taskData.due,
     priority: taskData.priority,
     description: taskData.description !== undefined ? sanitizeText(taskData.description) : undefined,
+    color: taskData.color,
   };
 
   if (
@@ -174,4 +176,39 @@ async function createNewTask(
   setIsModalOpen(false);
   setEditingTask(null);
   showToast('Task created', 'success');
+}
+
+/**
+ * handleQuickAdd — instantly creates a task with default values and returns it.
+ * The task appears in the backlog immediately; the user can edit it afterward.
+ */
+export async function handleQuickAdd(
+  showToast: (msg: string, type?: 'error' | 'success') => void,
+): Promise<Task | null> {
+  const taskId = crypto.randomUUID();
+  const taskValidation = createTask({
+    id: taskId,
+    title: '새 작업',
+    durationMinutes: 60,
+    due: getLocalToday(),
+    priority: 'Medium',
+    status: 'Pending',
+    createdAt: Date.now(),
+  });
+
+  if (!taskValidation.ok) {
+    logError('task-action/quick-add', taskValidation.error);
+    showToast('작업 생성 실패');
+    return null;
+  }
+
+  const createRes = await taskRepository.create(taskValidation.value);
+  if (!createRes.ok) {
+    logError('task-action/quick-add-save', createRes.error);
+    showToast('작업 저장 실패');
+    return null;
+  }
+
+  showToast('작업이 추가되었습니다', 'success');
+  return taskValidation.value;
 }

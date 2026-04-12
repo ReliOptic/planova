@@ -7,6 +7,30 @@ export type Priority = 'High' | 'Medium' | 'Low';
 /** Lifecycle status of a task. */
 export type TaskStatus = 'Pending' | 'Scheduled' | 'In Progress' | 'Completed';
 
+/** 10-color palette for task blocks. */
+export type TaskColor =
+  | 'blue' | 'indigo' | 'purple' | 'pink' | 'red'
+  | 'orange' | 'amber' | 'green' | 'teal' | 'slate';
+
+export const TASK_COLORS: readonly TaskColor[] = [
+  'blue', 'indigo', 'purple', 'pink', 'red',
+  'orange', 'amber', 'green', 'teal', 'slate',
+] as const;
+
+/** Tailwind-compatible color map for task blocks (bg + text). */
+export const TASK_COLOR_MAP: Record<TaskColor, { bg: string; text: string; ring: string }> = {
+  blue:   { bg: 'bg-blue-500',   text: 'text-white',     ring: 'ring-blue-300' },
+  indigo: { bg: 'bg-indigo-500', text: 'text-white',     ring: 'ring-indigo-300' },
+  purple: { bg: 'bg-purple-500', text: 'text-white',     ring: 'ring-purple-300' },
+  pink:   { bg: 'bg-pink-500',   text: 'text-white',     ring: 'ring-pink-300' },
+  red:    { bg: 'bg-red-500',    text: 'text-white',     ring: 'ring-red-300' },
+  orange: { bg: 'bg-orange-500', text: 'text-white',     ring: 'ring-orange-300' },
+  amber:  { bg: 'bg-amber-400',  text: 'text-amber-900', ring: 'ring-amber-300' },
+  green:  { bg: 'bg-green-500',  text: 'text-white',     ring: 'ring-green-300' },
+  teal:   { bg: 'bg-teal-500',   text: 'text-white',     ring: 'ring-teal-300' },
+  slate:  { bg: 'bg-slate-500',  text: 'text-white',     ring: 'ring-slate-300' },
+};
+
 const VALID_PRIORITIES: ReadonlySet<string> = new Set<Priority>(['High', 'Medium', 'Low']);
 const VALID_STATUSES: ReadonlySet<string> = new Set<TaskStatus>([
   'Pending',
@@ -43,6 +67,8 @@ export interface Task {
   readonly createdAt: number;
   /** Unix epoch ms. Only present when status is 'Completed'. */
   readonly completedAt?: number;
+  /** Optional display color for timeline blocks. */
+  readonly color?: TaskColor;
   readonly schemaVersion: 2;
 }
 
@@ -57,6 +83,7 @@ export interface CreateTaskInput {
   readonly status: string;
   readonly createdAt: number;
   readonly completedAt?: number;
+  readonly color?: string;
 }
 
 /**
@@ -104,6 +131,7 @@ export function createTask(input: CreateTaskInput): Result<Task, AppError> {
     ...(input.description !== undefined ? { description: input.description } : {}),
     ...(input.due !== undefined ? { due: input.due } : {}),
     ...(input.completedAt !== undefined ? { completedAt: input.completedAt } : {}),
+    ...(input.color !== undefined && TASK_COLORS.includes(input.color as TaskColor) ? { color: input.color as TaskColor } : {}),
   };
 
   return ok(task);

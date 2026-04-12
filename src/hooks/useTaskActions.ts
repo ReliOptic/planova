@@ -5,6 +5,7 @@ import {
   handleStartTask,
   handleDeleteTask,
   handleSaveTask,
+  handleQuickAdd,
 } from './use-task-crud';
 import { handleDragEnd, handleResizeTask } from './use-task-schedule';
 
@@ -20,6 +21,7 @@ export interface UseTaskActionsReturn {
     deltaSlots: number,
   ) => Promise<void>;
   readonly handleSaveTask: (taskData: Partial<TaskViewModel>) => Promise<void>;
+  readonly handleQuickAdd: () => Promise<void>;
 }
 
 /**
@@ -45,5 +47,6 @@ export function useTaskActions(
       handleResizeTask(taskId, edge, deltaSlots, tasks, showToast),
     handleSaveTask: (taskData) =>
       handleSaveTask(taskData, tasks, showToast, setIsModalOpen, setEditingTask),
+    handleQuickAdd: () => handleQuickAdd(showToast).then(() => undefined),
   };
 }

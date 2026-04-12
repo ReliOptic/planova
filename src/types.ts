@@ -1,7 +1,7 @@
 // Re-export domain types used across the application.
 // The UI layer works with TaskViewModel (v2 domain Task + schedule projection).
 // Named as `Task` here for backward compatibility with all UI components.
-export type { Priority, TaskStatus } from './domain/task';
+export type { Priority, TaskStatus, TaskColor } from './domain/task';
 export type { TaskViewModel as Task } from './services/task-view-model';
 export { SCHEMA_VERSION } from './types/task.types';
 

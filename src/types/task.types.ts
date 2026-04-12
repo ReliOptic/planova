@@ -10,6 +10,10 @@ export const SCHEMA_VERSION = 2;
  * for Phase 1 (1:1 relationship, avoids N+1 queries).
  * Phase 3 will add ExternalCalendarEvent as a separate collection.
  */
+export type TaskColor =
+  | 'blue' | 'indigo' | 'purple' | 'pink' | 'red'
+  | 'orange' | 'amber' | 'green' | 'teal' | 'slate';
+
 export interface Task {
   readonly id: string;
   readonly uid: string;
@@ -22,6 +26,7 @@ export interface Task {
   readonly createdAt: number; // Date.now()
   readonly completedAt?: number; // Date.now() when completed
   readonly schemaVersion: number;
+  readonly color?: TaskColor;
   // Schedule fields (ScheduleBlock projection, Phase 1)
   readonly startTime?: string; // UTC ISO 8601 (e.g. "2026-04-05T01:00:00.000Z")
   readonly endTime?: string; // UTC ISO 8601

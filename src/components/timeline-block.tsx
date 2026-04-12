@@ -6,6 +6,7 @@ import { cn } from '@/src/lib/utils';
 import { motion } from 'motion/react';
 import { formatTimeDisplay, isPastTime } from '@/src/utils/date-utils';
 import { buildBlockStyle, startResize } from './timeline-block-utils';
+import { TASK_COLOR_MAP, type TaskColor } from '@/src/domain/task';
 
 /** Props for DraggableScheduledTask. */
 export interface DraggableScheduledTaskProps {
@@ -50,11 +51,16 @@ export const DraggableScheduledTask: React.FC<DraggableScheduledTaskProps> = ({
 
   const style = buildBlockStyle(topPx, heightPx, column, totalColumns, transform, isDragging, isResizing);
 
-  const statusColors = isOverdue
-    ? 'bg-tertiary-container/10 border-tertiary'
-    : task.status === 'In Progress'
-      ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10'
-      : 'bg-secondary-container/30 border-on-secondary-container';
+  // Use task color if set, otherwise fall back to status-based colors
+  const taskColor = (task as { color?: TaskColor }).color;
+  const colorStyle = taskColor && TASK_COLOR_MAP[taskColor];
+  const statusColors = colorStyle
+    ? `${colorStyle.bg} border-transparent ${colorStyle.text}`
+    : isOverdue
+      ? 'bg-tertiary-container/10 border-tertiary'
+      : task.status === 'In Progress'
+        ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10'
+        : 'bg-secondary-container/30 border-on-secondary-container';
 
   const handleComplete = async (e: React.MouseEvent): Promise<void> => {
     e.stopPropagation();

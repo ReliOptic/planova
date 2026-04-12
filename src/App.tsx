@@ -169,7 +169,7 @@ export default function App() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isModalOpen]);
 
-  const { handleDragEnd, handleCompleteTask, handleStartTask, handleDeleteTask, handleResizeTask, handleSaveTask } =
+  const { handleDragEnd, handleCompleteTask, handleStartTask, handleDeleteTask, handleResizeTask, handleSaveTask, handleQuickAdd } =
     useTaskActions(tasks, showToast, setIsModalOpen, setEditingTask);
 
   const handleEditTask = (task: Task): void => {
@@ -202,7 +202,7 @@ export default function App() {
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          onAddTask={() => setIsModalOpen(true)}
+          onAddTask={() => void handleQuickAdd()}
           pendingCount={pendingTasks.length}
           completedCount={completedCount}
         />
@@ -229,7 +229,7 @@ export default function App() {
                         Create your first task and drag it onto the timeline to get started.
                       </p>
                       <button
-                        onClick={() => setIsModalOpen(true)}
+                        onClick={() => void handleQuickAdd()}
                         className="px-8 py-3 bg-gradient-to-br from-primary to-primary-container text-white font-bold rounded-lg shadow-md hover:brightness-110 active:scale-95 transition-all"
                       >
                         Create First Task

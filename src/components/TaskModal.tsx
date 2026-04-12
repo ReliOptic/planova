@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X, Clock, Calendar as CalendarIcon, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Priority, Task } from '@/src/types';
+import { Priority, Task, type TaskColor } from '@/src/types';
 import { getDurationOptions, getLocalToday } from '@/src/utils/date-utils';
+import { TASK_COLORS, TASK_COLOR_MAP } from '@/src/domain/task';
 
 interface ModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
   const [duration, setDuration] = useState(60);
   const [priority, setPriority] = useState<Priority>('Medium');
   const [due, setDue] = useState(getLocalToday());
+  const [color, setColor] = useState<TaskColor | undefined>(undefined);
   const [isSaving, setIsSaving] = useState(false);
 
   // Pre-fill when editing
@@ -29,12 +31,14 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
       setDuration(editingTask.duration);
       setPriority(editingTask.priority);
       setDue(editingTask.due);
+      setColor(editingTask.color);
     } else {
       setTitle('');
       setDescription('');
       setDuration(60);
       setPriority('Medium');
       setDue(getLocalToday());
+      setColor(undefined);
     }
     setIsSaving(false);
   }, [editingTask, isOpen]);
@@ -52,6 +56,7 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
         duration,
         priority,
         due,
+        color,
       });
       onClose();
     } finally {
@@ -150,6 +155,25 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
                     type="date"
                   />
                   <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-bold text-on-surface-variant uppercase tracking-[0.05em]">Color</label>
+                <div className="flex gap-2 flex-wrap">
+                  {TASK_COLORS.map((c) => {
+                    const styles = TASK_COLOR_MAP[c];
+                    const isSelected = color === c;
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setColor(isSelected ? undefined : c)}
+                        aria-label={c}
+                        className={`w-7 h-7 rounded-full transition-all ${styles.bg} ${isSelected ? `ring-2 ${styles.ring} ring-offset-2 scale-110` : 'hover:scale-110 opacity-70 hover:opacity-100'}`}
+                      />
+                    );
+                  })}
                 </div>
               </div>
 
