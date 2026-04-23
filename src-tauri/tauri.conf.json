@@ -38,7 +38,7 @@
   },
   "bundle": {
     "active": true,
-    "createUpdaterArtifacts": true,
+    "createUpdaterArtifacts": false,
     "targets": ["msi", "nsis"],
     "category": "Productivity",
     "shortDescription": "Offline visual task timeline",
