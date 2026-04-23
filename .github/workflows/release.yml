@@ -1,0 +1,115 @@
+name: Release Windows Installer
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release tag to create or update (example: v0.1.0)'
+        required: true
+        type: string
+      draft:
+        description: 'Create the GitHub release as a draft'
+        required: false
+        default: false
+        type: boolean
+      prerelease:
+        description: 'Mark the GitHub release as a prerelease'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: release-${{ github.event_name }}-${{ github.ref_name || inputs.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  windows-release:
+    name: Windows release (.msi + .exe)
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Validate release metadata and required signing config
+        shell: pwsh
+        run: |
+          if (-not $env:RELEASE_TAG) {
+            throw 'RELEASE_TAG is empty.'
+          }
+          if ($env:RELEASE_TAG -notmatch '^v\d+\.\d+\.\d+([-.].+)?$') {
+            throw "Release tag must look like v1.2.3. Got: $env:RELEASE_TAG"
+          }
+          if (-not $env:TAURI_SIGNING_PRIVATE_KEY) {
+            throw 'Missing secret: TAURI_SIGNING_PRIVATE_KEY'
+          }
+          if (-not $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD) {
+            throw 'Missing secret: TAURI_SIGNING_PRIVATE_KEY_PASSWORD'
+          }
+          if (-not $env:TAURI_UPDATER_PUBLIC_KEY) {
+            throw 'Missing repository variable: TAURI_UPDATER_PUBLIC_KEY'
+          }
+
+          $packageJson = Get-Content package.json -Raw | ConvertFrom-Json
+          $tauriConfig = Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json
+          $cargoToml = Get-Content src-tauri/Cargo.toml -Raw
+          $cargoVersionMatch = [regex]::Match($cargoToml, '(?m)^version\s*=\s*"([^"]+)"')
+          if (-not $cargoVersionMatch.Success) {
+            throw 'Could not find version in src-tauri/Cargo.toml'
+          }
+
+          $packageVersion = [string]$packageJson.version
+          $tauriVersion = [string]$tauriConfig.version
+          $cargoVersion = [string]$cargoVersionMatch.Groups[1].Value
+          $expectedTag = "v$packageVersion"
+
+          if ($packageVersion -ne $tauriVersion -or $packageVersion -ne $cargoVersion) {
+            throw "Version mismatch detected. package.json=$packageVersion tauri.conf.json=$tauriVersion Cargo.toml=$cargoVersion"
+          }
+          if ($env:RELEASE_TAG -ne $expectedTag) {
+            throw "Release tag $env:RELEASE_TAG does not match app version $expectedTag"
+          }
+
+      - name: Inject updater public key for CI build
+        shell: pwsh
+        run: |
+          $config = Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json
+          $config.plugins.updater.pubkey = $env:TAURI_UPDATER_PUBLIC_KEY
+          $config | ConvertTo-Json -Depth 100 | Set-Content src-tauri/tauri.conf.json
+
+      - run: npm ci
+
+      - name: Build and publish Tauri release
+        uses: tauri-apps/tauri-action@v1
+        with:
+          tagName: ${{ env.RELEASE_TAG }}
+          releaseName: 'Planova ${{ env.RELEASE_TAG }}'
+          releaseBody: 'Windows installer release built by GitHub Actions.'
+          releaseDraft: ${{ github.event_name == 'workflow_dispatch' && inputs.draft || false }}
+          prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
+          generateReleaseNotes: true
+          uploadUpdaterJson: true
+          updaterJsonPreferNsis: true
+          releaseAssetNamePattern: 'Planova_[version]_windows_[arch][_setup][ext]'
+          args: '--bundles nsis,msi'
