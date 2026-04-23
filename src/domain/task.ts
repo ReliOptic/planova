@@ -19,17 +19,17 @@ export const TASK_COLORS: readonly TaskColor[] = [
 ] as const;
 
 /** Tailwind-compatible color map for task blocks (bg + text). */
-export const TASK_COLOR_MAP: Record<TaskColor, { bg: string; text: string; ring: string }> = {
-  blue:   { bg: 'bg-blue-500',   text: 'text-white',     ring: 'ring-blue-300' },
-  indigo: { bg: 'bg-indigo-500', text: 'text-white',     ring: 'ring-indigo-300' },
-  purple: { bg: 'bg-purple-500', text: 'text-white',     ring: 'ring-purple-300' },
-  pink:   { bg: 'bg-pink-500',   text: 'text-white',     ring: 'ring-pink-300' },
-  red:    { bg: 'bg-red-500',    text: 'text-white',     ring: 'ring-red-300' },
-  orange: { bg: 'bg-orange-500', text: 'text-white',     ring: 'ring-orange-300' },
-  amber:  { bg: 'bg-amber-400',  text: 'text-amber-900', ring: 'ring-amber-300' },
-  green:  { bg: 'bg-green-500',  text: 'text-white',     ring: 'ring-green-300' },
-  teal:   { bg: 'bg-teal-500',   text: 'text-white',     ring: 'ring-teal-300' },
-  slate:  { bg: 'bg-slate-500',  text: 'text-white',     ring: 'ring-slate-300' },
+export const TASK_COLOR_MAP: Record<TaskColor, { bg: string; text: string; ring: string; hex: string }> = {
+  blue:   { bg: 'bg-blue-500',   text: 'text-white',     ring: 'ring-blue-300',   hex: '#3b82f6' },
+  indigo: { bg: 'bg-indigo-500', text: 'text-white',     ring: 'ring-indigo-300', hex: '#6366f1' },
+  purple: { bg: 'bg-purple-500', text: 'text-white',     ring: 'ring-purple-300', hex: '#a855f7' },
+  pink:   { bg: 'bg-pink-500',   text: 'text-white',     ring: 'ring-pink-300',   hex: '#ec4899' },
+  red:    { bg: 'bg-red-500',    text: 'text-white',     ring: 'ring-red-300',    hex: '#ef4444' },
+  orange: { bg: 'bg-orange-500', text: 'text-white',     ring: 'ring-orange-300', hex: '#f97316' },
+  amber:  { bg: 'bg-amber-400',  text: 'text-amber-900', ring: 'ring-amber-300',  hex: '#fbbf24' },
+  green:  { bg: 'bg-green-500',  text: 'text-white',     ring: 'ring-green-300',  hex: '#22c55e' },
+  teal:   { bg: 'bg-teal-500',   text: 'text-white',     ring: 'ring-teal-300',   hex: '#14b8a6' },
+  slate:  { bg: 'bg-slate-500',  text: 'text-white',     ring: 'ring-slate-300',  hex: '#64748b' },
 };
 
 const VALID_PRIORITIES: ReadonlySet<string> = new Set<Priority>(['High', 'Medium', 'Low']);
@@ -70,6 +70,8 @@ export interface Task {
   readonly completedAt?: number;
   /** Optional display color for timeline blocks. */
   readonly color?: TaskColor;
+  /** Block background opacity (20–100). Defaults to 100. */
+  readonly opacity?: number;
   /** Recurrence rule — if set, the task repeats. */
   readonly recurrenceRule?: RecurrenceRule;
   /** Groups recurring task instances into a series. */
@@ -97,6 +99,7 @@ export interface CreateTaskInput {
   readonly createdAt: number;
   readonly completedAt?: number;
   readonly color?: string;
+  readonly opacity?: number;
   readonly recurrenceRule?: RecurrenceRule;
   readonly recurrenceGroupId?: string;
   readonly group?: string;
@@ -162,6 +165,7 @@ export function createTask(input: CreateTaskInput): Result<Task, AppError> {
     ...(input.due !== undefined ? { due: input.due } : {}),
     ...(input.completedAt !== undefined ? { completedAt: input.completedAt } : {}),
     ...(input.color !== undefined && TASK_COLORS.includes(input.color as TaskColor) ? { color: input.color as TaskColor } : {}),
+    ...(input.opacity !== undefined && input.opacity >= 20 && input.opacity <= 100 ? { opacity: input.opacity } : {}),
     ...(input.recurrenceRule !== undefined ? { recurrenceRule: input.recurrenceRule } : {}),
     ...(input.recurrenceGroupId !== undefined ? { recurrenceGroupId: input.recurrenceGroupId } : {}),
     ...(input.group !== undefined ? { group: input.group } : {}),

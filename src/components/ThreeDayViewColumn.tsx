@@ -5,6 +5,8 @@ import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/src/lib/utils';
 import { computePosition, computeBlockHeight, formatTimeDisplay, isPastTime } from '@/src/utils/date-utils';
+import { TASK_COLOR_MAP, type TaskColor } from '@/src/domain/task';
+import { computeBlockColorStyle } from '@/src/utils/block-color';
 
 const SLOT_HEIGHT_PX = 80;
 
@@ -56,11 +58,18 @@ const TaskBlock: React.FC<{
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: task.id, data: task });
 
   const isOverdue = task.status === 'Scheduled' && task.endTime !== undefined && isPastTime(task.endTime);
-  const statusColors = isOverdue
-    ? 'bg-tertiary-container/10 border-tertiary'
-    : task.status === 'In Progress'
-      ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10'
-      : 'bg-secondary-container/30 border-on-secondary-container';
+  const taskColor = (task as { color?: TaskColor }).color;
+  const taskOpacity = (task as { opacity?: number }).opacity ?? 100;
+  const blockColorStyle = taskColor
+    ? computeBlockColorStyle(TASK_COLOR_MAP[taskColor].hex, taskOpacity)
+    : undefined;
+  const statusColors = blockColorStyle
+    ? ''
+    : isOverdue
+      ? 'bg-tertiary-container/10 border-tertiary'
+      : task.status === 'In Progress'
+        ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10'
+        : 'bg-secondary-container/30 border-on-secondary-container';
 
   const handleComplete = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -101,7 +110,19 @@ const TaskBlock: React.FC<{
   return (
     <div
       ref={setNodeRef}
-      style={{ transform: isResizing ? undefined : CSS.Translate.toString(transform), top: `${topPx}px`, height: `${Math.max(heightPx, 24)}px`, opacity: isDragging ? 0.5 : 1, zIndex: isDragging || isResizing ? 100 : 10, left: 0, right: 4 }}
+      style={{
+        transform: isResizing ? undefined : CSS.Translate.toString(transform),
+        top: `${topPx}px`,
+        height: `${Math.max(heightPx, 24)}px`,
+        opacity: isDragging ? 0.5 : 1,
+        zIndex: isDragging || isResizing ? 100 : 10,
+        left: 0,
+        right: 4,
+        ...(blockColorStyle ? {
+          backgroundColor: blockColorStyle.backgroundColor,
+          borderLeftColor: blockColorStyle.borderColor,
+        } : {}),
+      }}
       {...listeners}
       {...attributes}
       onDoubleClick={onEdit}
@@ -113,13 +134,19 @@ const TaskBlock: React.FC<{
           <div className="p-0.5 hover:bg-surface-container rounded cursor-grab active:cursor-grabbing shrink-0">
             <GripVertical className="text-outline-variant group-hover:text-primary" size={12} />
           </div>
-          <h4 className={cn('text-xs font-bold font-headline truncate', isOverdue ? 'text-tertiary' : task.status === 'In Progress' ? 'text-primary' : 'text-on-secondary-container')}>
+          <h4
+            style={blockColorStyle ? { color: blockColorStyle.color } : undefined}
+            className={cn('text-xs font-bold font-headline truncate', isOverdue ? 'text-tertiary' : task.status === 'In Progress' ? 'text-primary' : 'text-on-secondary-container')}
+          >
             {task.title}
           </h4>
         </div>
         <div className="flex items-center gap-1 shrink-0">
           {task.startTime && task.endTime && (
-            <span className={cn('text-[9px] font-bold px-1.5 py-0.5 rounded hidden sm:block', task.status === 'In Progress' ? 'bg-primary text-white' : isOverdue ? 'bg-tertiary text-white' : 'bg-on-secondary-container text-white')}>
+            <span
+              style={blockColorStyle ? { backgroundColor: blockColorStyle.borderColor, color: blockColorStyle.color } : undefined}
+              className={cn('text-[9px] font-bold px-1.5 py-0.5 rounded hidden sm:block', task.status === 'In Progress' ? 'bg-primary text-white' : isOverdue ? 'bg-tertiary text-white' : 'bg-on-secondary-container text-white')}
+            >
               {formatTimeDisplay(task.startTime)}
             </span>
           )}

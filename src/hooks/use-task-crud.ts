@@ -76,6 +76,7 @@ export async function handleCompleteTask(
         status: 'Pending',
         createdAt: Date.now(),
         color: completedTask.value.color,
+        opacity: completedTask.value.opacity,
         recurrenceRule: rule,
         recurrenceGroupId: groupId,
       });
@@ -226,6 +227,7 @@ async function updateExistingTask(
     priority: taskData.priority,
     description: taskData.description !== undefined ? sanitizeText(taskData.description) : undefined,
     color: taskData.color,
+    opacity: taskData.opacity,
     recurrenceRule: taskData.recurrenceRule,
     recurrenceGroupId: taskData.recurrenceGroupId,
     group: taskData.group,
@@ -318,6 +320,8 @@ async function createNewTask(
     status: 'Pending',
     createdAt: Date.now(),
     ...(taskData.description ? { description: sanitizeText(taskData.description) } : {}),
+    ...(taskData.color ? { color: taskData.color } : {}),
+    ...(taskData.opacity !== undefined ? { opacity: taskData.opacity } : {}),
     ...(taskData.recurrenceRule ? { recurrenceRule: taskData.recurrenceRule, recurrenceGroupId } : {}),
     ...(taskData.group ? { group: taskData.group } : {}),
   });

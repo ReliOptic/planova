@@ -11,6 +11,7 @@ import {
 } from './timeline-block-utils';
 import { TASK_COLOR_MAP, type TaskColor } from '@/src/domain/task';
 import { getDeviationTier, DEVIATION_STYLES } from '@/src/services/task-view-model';
+import { computeBlockColorStyle } from '@/src/utils/block-color';
 
 /** Props for DraggableScheduledTask. */
 export interface DraggableScheduledTaskProps {
@@ -66,11 +67,14 @@ export const DraggableScheduledTask: React.FC<DraggableScheduledTaskProps> = ({
 
   // Use task color if set, otherwise fall back to status-based colors
   const taskColor = (task as { color?: TaskColor }).color;
-  const colorStyle = taskColor && TASK_COLOR_MAP[taskColor];
+  const taskOpacity = (task as { opacity?: number }).opacity ?? 100;
+  const blockColorStyle = !isCompleted && taskColor
+    ? computeBlockColorStyle(TASK_COLOR_MAP[taskColor].hex, taskOpacity)
+    : undefined;
   const statusColors = isCompleted
     ? `${deviationStyle?.bg ?? 'bg-surface-container'} border-transparent`
-    : colorStyle
-      ? `${colorStyle.bg} border-transparent ${colorStyle.text}`
+    : blockColorStyle
+      ? ''
       : isOverdue
         ? 'bg-tertiary-container/10 border-tertiary'
         : task.status === 'In Progress'
@@ -89,7 +93,13 @@ export const DraggableScheduledTask: React.FC<DraggableScheduledTaskProps> = ({
   return (
     <div
       ref={isCompleted ? undefined : setNodeRef}
-      style={style}
+      style={{
+        ...style,
+        ...(blockColorStyle ? {
+          backgroundColor: blockColorStyle.backgroundColor,
+          borderLeftColor: blockColorStyle.borderColor,
+        } : {}),
+      }}
       {...dragAttributes}
       {...dragListeners}
       onDoubleClick={isCompleted ? undefined : onEdit}
@@ -134,6 +144,7 @@ export const DraggableScheduledTask: React.FC<DraggableScheduledTaskProps> = ({
             </div>
           )}
           <h4
+            style={blockColorStyle ? { color: blockColorStyle.color } : undefined}
             className={cn(
               'text-sm font-bold font-headline truncate flex items-center gap-1',
               isCompleted ? (deviationStyle?.text ?? 'text-on-surface-variant')
@@ -168,6 +179,7 @@ export const DraggableScheduledTask: React.FC<DraggableScheduledTaskProps> = ({
             task={task}
             isOverdue={isOverdue}
             isCompleting={isCompleting}
+            blockColorStyle={blockColorStyle}
             onComplete={handleComplete}
             onStart={handleStart}
             onDelete={onDelete}
@@ -186,10 +198,13 @@ export const DraggableScheduledTask: React.FC<DraggableScheduledTaskProps> = ({
         </motion.p>
       )}
       {!isCompleted && task.description && heightPx > 48 && (
-        <p className={cn(
-          'text-[11px] mt-1 ml-8 truncate',
-          task.status === 'In Progress' ? 'text-primary/80' : 'text-on-secondary-container/80',
-        )}>
+        <p
+          style={blockColorStyle ? { color: blockColorStyle.color, opacity: 0.8 } : undefined}
+          className={cn(
+            'text-[11px] mt-1 ml-8 truncate',
+            task.status === 'In Progress' ? 'text-primary/80' : 'text-on-secondary-container/80',
+          )}
+        >
           {task.description}
         </p>
       )}
@@ -210,22 +225,26 @@ interface TaskBlockActionsProps {
   task: Task;
   isOverdue: boolean;
   isCompleting: boolean;
+  blockColorStyle?: import('@/src/utils/block-color').BlockColorStyle;
   onComplete: (e: React.MouseEvent) => void;
   onStart: (e: React.MouseEvent) => void;
   onDelete: () => void;
 }
 
 const TaskBlockActions: React.FC<TaskBlockActionsProps> = ({
-  task, isOverdue, isCompleting, onComplete, onStart, onDelete,
+  task, isOverdue, isCompleting, blockColorStyle, onComplete, onStart, onDelete,
 }) => (
   <div className="flex items-center gap-1.5 shrink-0">
     {task.startTime && task.endTime && (
-      <span className={cn(
-        'text-[10px] font-bold px-2 py-0.5 rounded shadow-sm',
-        task.status === 'In Progress' ? 'bg-primary text-white'
-          : isOverdue ? 'bg-tertiary text-white'
-          : 'bg-on-secondary-container text-white',
-      )}>
+      <span
+        style={blockColorStyle ? { backgroundColor: blockColorStyle.borderColor, color: blockColorStyle.color } : undefined}
+        className={cn(
+          'text-[10px] font-bold px-2 py-0.5 rounded shadow-sm',
+          task.status === 'In Progress' ? 'bg-primary text-white'
+            : isOverdue ? 'bg-tertiary text-white'
+            : 'bg-on-secondary-container text-white',
+        )}
+      >
         {formatTimeDisplay(task.startTime)} - {formatTimeDisplay(task.endTime)}
       </span>
     )}

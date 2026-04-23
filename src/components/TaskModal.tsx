@@ -5,6 +5,7 @@ import { Priority, Task, type TaskColor } from '@/src/types';
 import type { RecurrenceRule, RecurrenceFrequency } from '@/src/types';
 import { getDurationOptions, getLocalToday } from '@/src/utils/date-utils';
 import { TASK_COLORS, TASK_COLOR_MAP } from '@/src/domain/task';
+import { computeBlockColorStyle } from '@/src/utils/block-color';
 
 interface ModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
   const [priority, setPriority] = useState<Priority>('Medium');
   const [due, setDue] = useState(getLocalToday());
   const [color, setColor] = useState<TaskColor | undefined>(undefined);
+  const [opacity, setOpacity] = useState(100);
   const [recurrenceEnabled, setRecurrenceEnabled] = useState(false);
   const [recurrenceFrequency, setRecurrenceFrequency] = useState<RecurrenceFrequency>('weekly');
   const [recurrenceInterval, setRecurrenceInterval] = useState(1);
@@ -39,6 +41,7 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
       setPriority(editingTask.priority);
       setDue(editingTask.due);
       setColor(editingTask.color);
+      setOpacity((editingTask as { opacity?: number }).opacity ?? 100);
       setGroup(editingTask.group ?? '');
       if (editingTask.recurrenceRule) {
         setRecurrenceEnabled(true);
@@ -60,6 +63,7 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
       setPriority('Medium');
       setDue(getLocalToday());
       setColor(undefined);
+      setOpacity(100);
       setGroup('');
       setRecurrenceEnabled(false);
       setRecurrenceFrequency('weekly');
@@ -94,6 +98,7 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
         priority,
         due,
         color,
+        opacity: color !== undefined ? opacity : undefined,
         recurrenceRule,
         group: group.trim() || undefined,
       } as Partial<Task>);
@@ -214,6 +219,37 @@ export const TaskModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, editi
                     );
                   })}
                 </div>
+                {color && (() => {
+                  const preview = computeBlockColorStyle(TASK_COLOR_MAP[color].hex, opacity);
+                  return (
+                    <div className="mt-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-medium text-on-surface-variant">불투명도</label>
+                        <span className="text-[10px] font-bold text-on-surface-variant tabular-nums">{opacity}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={20}
+                        max={100}
+                        step={5}
+                        value={opacity}
+                        onChange={(e) => setOpacity(Number(e.target.value))}
+                        className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-primary bg-outline-variant/20"
+                        aria-label="블록 불투명도"
+                      />
+                      <div
+                        className="mt-2 px-3 py-2 rounded-lg border-l-4 text-[11px] font-bold truncate"
+                        style={{
+                          backgroundColor: preview.backgroundColor,
+                          borderLeftColor: preview.borderColor,
+                          color: preview.color,
+                        }}
+                      >
+                        {title || '미리보기'}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="space-y-1.5">
