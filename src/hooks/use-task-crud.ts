@@ -2,7 +2,7 @@ import type { TaskViewModel } from '../services/task-view-model';
 import { createTask } from '../domain/task';
 import type { Task } from '../domain/task';
 import { taskRepository, scheduleBlockRepository, logger } from '../app/dependencies';
-import { buildUTCTime, getLocalToday } from '../utils/date-utils';
+import { getLocalToday } from '../utils/date-utils';
 import { sanitizeText } from '../utils/sanitize';
 import { getNextOccurrence } from '../domain/recurrence-rule';
 
@@ -233,19 +233,18 @@ async function updateExistingTask(
 
   if (
     existingTask?.startTime &&
-    existingTask?.scheduledDate &&
     existingTask?.scheduleBlockId &&
     taskData.duration !== undefined &&
     taskData.duration !== existingTask.durationMinutes
   ) {
-    const startDate = new Date(existingTask.startTime);
-    const endMs = startDate.getTime() + taskData.duration * 60_000;
-    const newEnd = new Date(endMs);
-    const endTime = buildUTCTime(
-      existingTask.scheduledDate,
-      newEnd.getUTCHours(),
-      newEnd.getUTCMinutes(),
-    );
+    // Compute endTime via direct UTC millisecond arithmetic. Using
+    // buildUTCTime with newEnd.getUTCHours()/Minutes() would silently
+    // double-convert in non-UTC timezones (buildUTCTime interprets its
+    // hour/minute args as local time), producing an endTime before
+    // startTime that appears as a tiny, overdue-red block.
+    const endTime = new Date(
+      Date.parse(existingTask.startTime) + taskData.duration * 60_000,
+    ).toISOString();
     const blockRes = await scheduleBlockRepository.update(existingTask.scheduleBlockId, { endTime });
     if (!blockRes.ok) {
       logError('task-action/save-block', blockRes.error);

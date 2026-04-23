@@ -80,3 +80,16 @@ export function startResize(
   document.addEventListener('touchmove', onTouchMove, { passive: false });
   document.addEventListener('touchend', onTouchEnd);
 }
+
+/**
+ * Prevent block-level drag activation when the user starts from an element
+ * explicitly marked as interactive.
+ */
+export function blockDragActivationFromInteractiveChild(
+  e: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>,
+): void {
+  const target = e.target;
+  if (target instanceof HTMLElement && target.closest('[data-no-drag="true"]')) {
+    e.stopPropagation();
+  }
+}

@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { DndContext, MouseSensor, TouchSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import type { Task } from './types';
 import { cn } from './lib/utils';
+import { slotFriendlyCollisionDetection } from './utils/drag-drop';
 import { db } from './infrastructure/persistence/db';
 import { runMigrations } from './infrastructure/persistence/migrations/runner';
 import { composeViewModels } from './services/task-view-model';
@@ -204,7 +205,11 @@ export default function App() {
   }
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={slotFriendlyCollisionDetection}
+      onDragEnd={handleDragEnd}
+    >
       <div className="min-h-screen bg-surface">
         {/* Skip navigation link for keyboard users */}
         <a
