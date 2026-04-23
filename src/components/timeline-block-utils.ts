@@ -35,6 +35,7 @@ export function buildBlockStyle(
     zIndex: isDragging || isResizing ? 100 : 10,
     left: colLeft,
     width: colWidth,
+    ...(isDragging ? { willChange: 'transform' } : {}),
   };
 }
 
@@ -79,17 +80,4 @@ export function startResize(
   document.addEventListener('mouseup', onEnd);
   document.addEventListener('touchmove', onTouchMove, { passive: false });
   document.addEventListener('touchend', onTouchEnd);
-}
-
-/**
- * Prevent block-level drag activation when the user starts from an element
- * explicitly marked as interactive.
- */
-export function blockDragActivationFromInteractiveChild(
-  e: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>,
-): void {
-  const target = e.target;
-  if (target instanceof HTMLElement && target.closest('[data-no-drag="true"]')) {
-    e.stopPropagation();
-  }
 }

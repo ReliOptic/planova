@@ -6,7 +6,6 @@ import { cn } from '@/src/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatTimeDisplay, isPastTime } from '@/src/utils/date-utils';
 import {
-  blockDragActivationFromInteractiveChild,
   buildBlockStyle,
   startResize,
 } from './timeline-block-utils';
@@ -93,11 +92,9 @@ export const DraggableScheduledTask: React.FC<DraggableScheduledTaskProps> = ({
       style={style}
       {...dragAttributes}
       {...dragListeners}
-      onMouseDownCapture={blockDragActivationFromInteractiveChild}
-      onTouchStartCapture={blockDragActivationFromInteractiveChild}
       onDoubleClick={isCompleted ? undefined : onEdit}
       className={cn(
-        'absolute p-3 group rounded-lg border-l-4 transition-all overflow-hidden',
+        'absolute p-3 group rounded-lg border-l-4 transition-colors overflow-hidden',
         statusColors,
         isDragging && 'shadow-2xl ring-2 ring-primary/30',
         isCompleted && 'opacity-80',
@@ -243,6 +240,8 @@ const TaskBlockActions: React.FC<TaskBlockActionsProps> = ({
     {task.status === 'Scheduled' && !isOverdue && (
       <button
         onClick={onStart}
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
         data-no-drag="true"
         className="p-1 bg-primary/10 rounded-full text-primary hover:bg-primary/20 transition-all opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
         title="Start task"
@@ -254,6 +253,8 @@ const TaskBlockActions: React.FC<TaskBlockActionsProps> = ({
     {(task.status === 'In Progress' || isOverdue) && (
       <motion.button
         onClick={onComplete}
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
         disabled={isCompleting}
         data-no-drag="true"
         animate={isCompleting ? { scale: [1, 1.3, 1] } : {}}
@@ -272,6 +273,8 @@ const TaskBlockActions: React.FC<TaskBlockActionsProps> = ({
     )}
     <button
       onClick={(e) => { e.stopPropagation(); onDelete(); }}
+      onMouseDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
       data-no-drag="true"
       className="p-1 rounded text-on-surface-variant hover:text-tertiary transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
       title="Delete task"

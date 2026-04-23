@@ -5,7 +5,6 @@ import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/src/lib/utils';
 import { computePosition, computeBlockHeight, formatTimeDisplay, isPastTime } from '@/src/utils/date-utils';
-import { blockDragActivationFromInteractiveChild } from './timeline-block-utils';
 
 const SLOT_HEIGHT_PX = 80;
 
@@ -103,12 +102,10 @@ const TaskBlock: React.FC<{
     <div
       ref={setNodeRef}
       style={{ transform: isResizing ? undefined : CSS.Translate.toString(transform), top: `${topPx}px`, height: `${Math.max(heightPx, 24)}px`, opacity: isDragging ? 0.5 : 1, zIndex: isDragging || isResizing ? 100 : 10, left: 0, right: 4 }}
-      onMouseDownCapture={blockDragActivationFromInteractiveChild}
-      onTouchStartCapture={blockDragActivationFromInteractiveChild}
       {...listeners}
       {...attributes}
       onDoubleClick={onEdit}
-      className={cn('absolute p-2 group rounded-lg border-l-4 transition-all overflow-hidden cursor-grab active:cursor-grabbing', statusColors, isDragging && 'shadow-2xl ring-2 ring-primary/30')}
+      className={cn('absolute p-2 group rounded-lg border-l-4 transition-colors overflow-hidden cursor-grab active:cursor-grabbing', statusColors, isDragging && 'shadow-2xl ring-2 ring-primary/30')}
     >
       <div data-no-drag="true" onMouseDown={(e) => handleResizeStart(e, 'top')} onTouchStart={(e) => handleResizeStart(e, 'top')} className="absolute top-0 left-0 right-0 h-2 cursor-n-resize opacity-0 group-hover:opacity-100 hover:bg-primary/10 z-20" />
       <div className="flex justify-between items-start gap-1">
@@ -127,16 +124,16 @@ const TaskBlock: React.FC<{
             </span>
           )}
           {task.status === 'Scheduled' && !isOverdue && (
-            <button data-no-drag="true" onClick={(e) => { e.stopPropagation(); onStart(); }} className="p-0.5 bg-primary/10 rounded-full text-primary hover:bg-primary/20 opacity-0 group-hover:opacity-100" title="Start">
+            <button data-no-drag="true" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onStart(); }} className="p-0.5 bg-primary/10 rounded-full text-primary hover:bg-primary/20 opacity-0 group-hover:opacity-100" title="Start">
               <Check size={10} />
             </button>
           )}
           {(task.status === 'In Progress' || isOverdue) && (
-            <button data-no-drag="true" onClick={handleComplete} disabled={isCompleting} className={cn('p-0.5 rounded-full', isCompleting ? 'bg-green-500 text-white' : 'bg-white/80 text-primary hover:bg-primary hover:text-white opacity-0 group-hover:opacity-100')} title="Complete">
+            <button data-no-drag="true" onMouseDown={(e) => e.stopPropagation()} onClick={handleComplete} disabled={isCompleting} className={cn('p-0.5 rounded-full', isCompleting ? 'bg-green-500 text-white' : 'bg-white/80 text-primary hover:bg-primary hover:text-white opacity-0 group-hover:opacity-100')} title="Complete">
               <Check size={10} />
             </button>
           )}
-          <button data-no-drag="true" onClick={(e) => { e.stopPropagation(); onDelete(); }} className="p-0.5 text-on-surface-variant hover:text-tertiary opacity-0 group-hover:opacity-100" title="Delete">
+          <button data-no-drag="true" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onDelete(); }} className="p-0.5 text-on-surface-variant hover:text-tertiary opacity-0 group-hover:opacity-100" title="Delete">
             <Trash2 size={10} />
           </button>
         </div>

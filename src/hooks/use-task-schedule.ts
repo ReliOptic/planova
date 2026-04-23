@@ -48,7 +48,7 @@ async function scheduleTaskOnSlot(
   )
     return;
 
-  const endMinutes = hour * 60 + minute + task.durationMinutes;
+  const endMinutes = hour * 60 + minute + (task.blockDurationMinutes ?? task.durationMinutes);
   const endHour = Math.floor(endMinutes / 60);
   const endMinute = endMinutes % 60;
 
