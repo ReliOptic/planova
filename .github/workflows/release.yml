@@ -89,7 +89,7 @@ jobs:
       - run: npm ci
 
       - name: Build and publish Tauri release
-        uses: tauri-apps/tauri-action@v1
+        uses: tauri-apps/tauri-action@v0.6.2
         with:
           tagName: ${{ env.RELEASE_TAG }}
           releaseName: 'Planova ${{ env.RELEASE_TAG }}'
