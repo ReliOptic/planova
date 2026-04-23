@@ -34,9 +34,6 @@ jobs:
     env:
       RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-      TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -52,7 +49,7 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
-      - name: Validate release metadata and required signing config
+      - name: Validate release metadata
         shell: pwsh
         run: |
           if (-not $env:RELEASE_TAG) {
@@ -60,15 +57,6 @@ jobs:
           }
           if ($env:RELEASE_TAG -notmatch '^v\d+\.\d+\.\d+([-.].+)?$') {
             throw "Release tag must look like v1.2.3. Got: $env:RELEASE_TAG"
-          }
-          if (-not $env:TAURI_SIGNING_PRIVATE_KEY) {
-            throw 'Missing secret: TAURI_SIGNING_PRIVATE_KEY'
-          }
-          if (-not $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD) {
-            throw 'Missing secret: TAURI_SIGNING_PRIVATE_KEY_PASSWORD'
-          }
-          if (-not $env:TAURI_UPDATER_PUBLIC_KEY) {
-            throw 'Missing repository variable: TAURI_UPDATER_PUBLIC_KEY'
           }
 
           $packageJson = Get-Content package.json -Raw | ConvertFrom-Json
@@ -91,11 +79,11 @@ jobs:
             throw "Release tag $env:RELEASE_TAG does not match app version $expectedTag"
           }
 
-      - name: Inject updater public key for CI build
+      - name: Disable updater artifacts for installer-only CI release
         shell: pwsh
         run: |
           $config = Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json
-          $config.plugins.updater.pubkey = $env:TAURI_UPDATER_PUBLIC_KEY
+          $config.bundle.createUpdaterArtifacts = $false
           $config | ConvertTo-Json -Depth 100 | Set-Content src-tauri/tauri.conf.json
 
       - run: npm ci
@@ -105,11 +93,10 @@ jobs:
         with:
           tagName: ${{ env.RELEASE_TAG }}
           releaseName: 'Planova ${{ env.RELEASE_TAG }}'
-          releaseBody: 'Windows installer release built by GitHub Actions.'
+          releaseBody: 'Windows installer release built by GitHub Actions. This CI path publishes NSIS (.exe) and MSI installers only.'
           releaseDraft: ${{ github.event_name == 'workflow_dispatch' && inputs.draft || false }}
           prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
           generateReleaseNotes: true
-          uploadUpdaterJson: true
-          updaterJsonPreferNsis: true
+          uploadUpdaterJson: false
           releaseAssetNamePattern: 'Planova_[version]_windows_[arch][_setup][ext]'
           args: '--bundles nsis,msi'
