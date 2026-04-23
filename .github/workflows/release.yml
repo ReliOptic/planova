@@ -79,13 +79,6 @@ jobs:
             throw "Release tag $env:RELEASE_TAG does not match app version $expectedTag"
           }
 
-      - name: Disable updater artifacts for installer-only CI release
-        shell: pwsh
-        run: |
-          $config = Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json
-          $config.bundle.createUpdaterArtifacts = $false
-          $config | ConvertTo-Json -Depth 100 | Set-Content src-tauri/tauri.conf.json
-
       - run: npm ci
 
       - name: Build and publish Tauri release
